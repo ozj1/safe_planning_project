@@ -82,7 +82,7 @@ global y_final y_temp_final y_temp_init traj_count
 
 % road upper and lower limitstraj_count
 global road_up_lim road_low_lim Lane_size
-global vref aref vref_road
+global vref aref
 % --- initialize trace data structure
 trace = struct('iter',nan,'lambda',nan,'dlambda',nan,'cost',nan);
 trace = repmat(trace,[maxIter 1]);
@@ -93,7 +93,6 @@ trace(1).dlambda = dlambda;
 %% initializaion
 % --- reference trajectory and simulation environment generation
 vref        = 15;
-vref_road=15;
 aref=0.;
 traj_count=1;
 tf=1;%seconds needed to do the lane change 
@@ -205,8 +204,7 @@ for i = 1:1:NUM_TOTAL
        end
     end
     if ref_traj(1,4) ~= vref% here we want to update ref traj if reftraj(4)~= updated vref which may be equal to target velocity if we want to do lane keeping once we are in tmpoary destinations 
-          disp(ref_traj(1,4))
-        %vref i constantly updating in DYNCST
+          %vref i constantly updating in DYNCST
           ref_traj    = reftraj_gen(2*T, dt, -3*Lane_size/2.,20, 'LaneChange', aref,vref,tf,X_planned(1,i-1));%we need to update the x0 from 20 to current position of ego vehicle
     end
     

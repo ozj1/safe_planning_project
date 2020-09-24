@@ -139,7 +139,7 @@ for i = 1:1:NUM_CTRL
          dx_1=abs(obstacle(index).traj(1,i)-Xi(1));%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
 
         if y_temp_final ~= y_final
-            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.05*dx_1)));
+            vref=floor(obstacle(index).traj(4,i)+abs((vref_road-obstacle(index).traj(4,i))*tanh(0.05*dx_1)));
             %vref=obstacle(index).traj(4,i);
         elseif y_temp_final == y_final
             vref=vref_road;
