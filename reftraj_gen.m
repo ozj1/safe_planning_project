@@ -31,7 +31,7 @@ function ref = reftraj_gen(T_tot, dt, y_init,x_init, varargin)
     % required for weight calculation in DYNCST 
     global y_final y_temp_final y_temp_init traj_count
     % for obstacle overtaking until the road is clear 
-    global EgoPolicy Phase
+    global EgoPolicy Phase road_up_lim
     % setup default fields
     optargs = {'Linear' '' '' '3' '20' 'Road_lane'};%Omid: I changed {'Linear' '' '3' '20'} to {'Linear' '' '3' '0'}
 
@@ -76,8 +76,7 @@ vehicle_type=cell2mat(optargs(6));
          y_temp_final=y_temp_init+Lane_size;% by default we go to th upper lane for overtaking
          if y_temp_final>road_up_lim% if we passd the road upper boundary we go one lane down, as simple as that, we never need to be worried about passing the lower road boundary 
             y_temp_final=y_temp_init-Lane_size;
-
-         
+         end
     elseif Phase==2
         if (y_init == -Lane_size)
             y_final = Lane_size;

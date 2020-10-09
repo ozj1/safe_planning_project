@@ -135,6 +135,7 @@ for i = 1:1:NUM_CTRL
 %            w_vel       = 30.* ones(NUM_CTRL,1);
 %         else
        EgoPolicy=0;%initialization meaning lane keeping by default 
+       Phase=1;
        Vtraffic=vref_road;%initialization
        ghgh=length(obstacle);
        %if there wasn't an car near than distance of 300 from our car, we spcify the index as a requirment for following eqs  
@@ -175,7 +176,7 @@ for i = 1:1:NUM_CTRL
               deltaX=obstacle(k).traj(1,i)-Xi(1);
               EgoPolicy =EgoPolicy+deltaV/deltaX;% EgoPolicy can be lane changing for EgoPolicy<0
               %finding the index of target vhicle with min distance if it's in the same lane with ego car   
-              if dx_wei_tags(k)<closest_car
+              if abs(dx_wei_tags(k))<closest_car
               closest_car=dx_wei_tags(k);
               index=k;
               end

@@ -103,7 +103,7 @@ traj_count=1;
 ego_initial_y=-Lane_size/2.;
 scenario_ref='LaneChange';%'LaneChange';
 vehicle_type='Ego';%to make sure global variables of y_final and y_temp_final will update only for case of Ego vehicle 
-
+Phase=1;
 tf=1;%seconds needed to do the lane change 
 ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,20,vehicle_type);%it must be 3 for D1 and -3 for others 
 top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref);
@@ -201,8 +201,13 @@ for i = 1:1:NUM_TOTAL
     % ref generation for obstacle overtaking until the road is clear 
     if Phase==1
          if EgoPolicy<0 %then we need to do a lane change 
-        
+        scenario_ref='LaneChange';
+        ref_traj    = reftraj_gen(2*T, dt, X_planned(2,i),20, scenario_ref, aref,vref,tf,X_planned(1,i),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+
          else
+        scenario_ref='Linear';
+        ref_traj    = reftraj_gen(2*T, dt, X_planned(2,i),20, scenario_ref, aref,vref,tf,X_planned(1,i),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+
          end
     elseif Phase==2
     
