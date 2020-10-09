@@ -195,14 +195,14 @@ w_end_ref   = 50;%50
 w_end_acc   = 10;%110
 w_end_vel   = 10;%10
 
-q1_back     = 30;
-q2_back     = 30;
+q1_back     = 50;
+q2_back     = 50;
 
-q1_front    = 30;
-q2_front    = 30;
+q1_front    = 50;
+q2_front    = 50;
 
-q1_road = 20;
-q2_road = 20;
+q1_road = 50;
+q2_road = 50;
 
 q1_min_vel =0;
 q2_min_vel=0;

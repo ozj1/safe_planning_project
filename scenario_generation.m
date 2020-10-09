@@ -280,8 +280,7 @@ function [obs, cut_in_traj] = scenario_generation(Case_Code)
 %             cut_in_traj(2,i,2) = cut_in_traj(2,i-1,2) + sin(cut_in_traj(4,i-1,2)) * cut_in_traj(3,i-1,2) * dt;
         end
        end
-        
-    elseif strcmp(Case_Code,'Od2')
+    elseif strcmp(Case_Code,'Od2')%we are in the last lane and we like to do a takeover
         % obstacle1
         o1_init = [20;-Lane_size/2.; 0; 8; 0];
         o1_vert = inflate(o1_init);
@@ -297,7 +296,7 @@ function [obs, cut_in_traj] = scenario_generation(Case_Code)
         % obstacle3 
         
         
-        o3_init = [10;Lane_size/2.; 0; 8;0];
+        o3_init = [20;3*Lane_size/2.; 0; 8;0];
         o3_vert = inflate(o3_init);
         o3      = obstacle(o3_init(1:2), o3_vert, o3_init(3), o3_init(4), o3_init(5), NUM_CTRL, dt, t_switch);
         o3      = o3.update_traj(false);
@@ -320,13 +319,13 @@ function [obs, cut_in_traj] = scenario_generation(Case_Code)
         o6      = obstacle(o6_init(1:2), o6_vert, o6_init(3), o6_init(4), o6_init(5), NUM_CTRL, dt, t_switch);
         o6      = o6.update_traj(false);
         
-        obs = [o1,o2];
+        obs = [o1,o2,o3];
         
         % build a full target trajectory
 %         for mm=1:size(obs)
         cut_in_traj(:,:,1) = o1_init * ones(1, (T+T_horizon)/dt);
         cut_in_traj(:,:,2) = o2_init * ones(1, (T+T_horizon)/dt);
-%         cut_in_traj(:,:,3) = o3_init * ones(1, (T+T_horizon)/dt);
+         cut_in_traj(:,:,3) = o3_init * ones(1, (T+T_horizon)/dt);
 %         cut_in_traj(:,:,4) = o4_init * ones(1, (T+T_horizon)/dt);
 %         cut_in_traj(:,:,5) = o5_init * ones(1, (T+T_horizon)/dt);
 %         cut_in_traj(:,:,6) = o6_init * ones(1, (T+T_horizon)/dt);
@@ -340,6 +339,127 @@ function [obs, cut_in_traj] = scenario_generation(Case_Code)
 %             cut_in_traj(2,i,2) = cut_in_traj(2,i-1,2) + sin(cut_in_traj(4,i-1,2)) * cut_in_traj(3,i-1,2) * dt;
         end
        end
+       
+    elseif strcmp(Case_Code,'Od3')%we are in the last lane and we like to do a takeover
+        % obstacle1
+        o1_init = [80;Lane_size/2.; 0; 8; 0];
+        o1_vert = inflate(o1_init);
+        o1      = obstacle(o1_init(1:2), o1_vert,o1_init(3), o1_init(4), o1_init(5), NUM_CTRL, dt, t_switch);
+        o1      = o1.update_traj(false);
+        
+        % obstacle2 
+        o2_init = [100; Lane_size/2.; 0; 8; 0];
+        o2_vert = inflate(o2_init);
+        o2      = obstacle(o2_init(1:2), o2_vert, o2_init(3), o2_init(4), o2_init(5), NUM_CTRL, dt, t_switch);
+        o2      = o2.update_traj(false);
+        
+        % obstacle3 
+        
+        
+        o3_init = [20;3*Lane_size/2.; 0; 8;0];
+        o3_vert = inflate(o3_init);
+        o3      = obstacle(o3_init(1:2), o3_vert, o3_init(3), o3_init(4), o3_init(5), NUM_CTRL, dt, t_switch);
+        o3      = o3.update_traj(false);
+        
+        % obstacle4 
+        o4_init = [-60;Lane_size/2.;  0; 13; 0];
+        o4_vert = inflate(o4_init);
+        o4      = obstacle(o4_init(1:2), o4_vert, o4_init(3), o4_init(4), o4_init(5), NUM_CTRL, dt, t_switch);
+        o4      = o4.update_traj(false);
+        
+        % obstacle5 
+        o5_init = [80; -Lane_size/2.;  0; 7; 0];
+        o5_vert = inflate(o5_init);
+        o5      = obstacle(o5_init(1:2), o5_vert, o5_init(3), o5_init(4), o5_init(5), NUM_CTRL, dt, t_switch);
+        o5      = o5.update_traj(false);
+        
+        % obstacle6 
+        o6_init = [60; Lane_size/2.;  0; 7; 0];
+        o6_vert = inflate(o6_init);
+        o6      = obstacle(o6_init(1:2), o6_vert, o6_init(3), o6_init(4), o6_init(5), NUM_CTRL, dt, t_switch);
+        o6      = o6.update_traj(false);
+        
+        obs = [o1,o2,o3,o4];
+        
+        % build a full target trajectory
+%         for mm=1:size(obs)
+        cut_in_traj(:,:,1) = o1_init * ones(1, (T+T_horizon)/dt);
+        cut_in_traj(:,:,2) = o2_init * ones(1, (T+T_horizon)/dt);
+         cut_in_traj(:,:,3) = o3_init * ones(1, (T+T_horizon)/dt);
+           cut_in_traj(:,:,4) = o4_init * ones(1, (T+T_horizon)/dt);
+%         cut_in_traj(:,:,5) = o5_init * ones(1, (T+T_horizon)/dt);
+%         cut_in_traj(:,:,6) = o6_init * ones(1, (T+T_horizon)/dt);
+        
+%         end
+       for nn=1:length(obs)
+        for i = 2:size(cut_in_traj,2)
+            cut_in_traj(1,i,nn) = cut_in_traj(1,i-1,nn) + cos(cut_in_traj(5,i-1,nn)) * cut_in_traj(4,i-1,nn) * dt;
+            cut_in_traj(2,i,nn) = cut_in_traj(2,i-1,nn) + sin(cut_in_traj(5,i-1,nn)) * cut_in_traj(4,i-1,nn) * dt;
+%             cut_in_traj(1,i,2) = cut_in_traj(1,i-1,2) + cos(cut_in_traj(4,i-1,2)) * cut_in_traj(3,i-1,2) * dt;
+%             cut_in_traj(2,i,2) = cut_in_traj(2,i-1,2) + sin(cut_in_traj(4,i-1,2)) * cut_in_traj(3,i-1,2) * dt;
+        end
+       end
+       
+       elseif strcmp(Case_Code,'Od4')%a fast car Vtgt>Vroad s chasing the ego car and will not stop
+        % obstacle1
+        o1_init = [-60;3*Lane_size/2.; 0; 19; 0];
+        o1_vert = inflate(o1_init);
+        o1      = obstacle(o1_init(1:2), o1_vert,o1_init(3), o1_init(4), o1_init(5), NUM_CTRL, dt, t_switch);
+        o1      = o1.update_traj(false);
+        
+        % obstacle2 
+        o2_init = [100; Lane_size/2.; 0; 8; 0];
+        o2_vert = inflate(o2_init);
+        o2      = obstacle(o2_init(1:2), o2_vert, o2_init(3), o2_init(4), o2_init(5), NUM_CTRL, dt, t_switch);
+        o2      = o2.update_traj(false);
+        
+        % obstacle3 
+        
+        
+        o3_init = [20;3*Lane_size/2.; 0; 8;0];
+        o3_vert = inflate(o3_init);
+        o3      = obstacle(o3_init(1:2), o3_vert, o3_init(3), o3_init(4), o3_init(5), NUM_CTRL, dt, t_switch);
+        o3      = o3.update_traj(false);
+        
+        % obstacle4 
+        o4_init = [-60;Lane_size/2.;  0; 13; 0];
+        o4_vert = inflate(o4_init);
+        o4      = obstacle(o4_init(1:2), o4_vert, o4_init(3), o4_init(4), o4_init(5), NUM_CTRL, dt, t_switch);
+        o4      = o4.update_traj(false);
+        
+        % obstacle5 
+        o5_init = [80; -Lane_size/2.;  0; 7; 0];
+        o5_vert = inflate(o5_init);
+        o5      = obstacle(o5_init(1:2), o5_vert, o5_init(3), o5_init(4), o5_init(5), NUM_CTRL, dt, t_switch);
+        o5      = o5.update_traj(false);
+        
+        % obstacle6 
+        o6_init = [60; Lane_size/2.;  0; 7; 0];
+        o6_vert = inflate(o6_init);
+        o6      = obstacle(o6_init(1:2), o6_vert, o6_init(3), o6_init(4), o6_init(5), NUM_CTRL, dt, t_switch);
+        o6      = o6.update_traj(false);
+        
+        obs = [];
+        
+        % build a full target trajectory
+%         for mm=1:size(obs)
+        cut_in_traj(:,:,1) = o1_init * ones(1, (T+T_horizon)/dt);
+%         cut_in_traj(:,:,2) = o2_init * ones(1, (T+T_horizon)/dt);
+%          cut_in_traj(:,:,3) = o3_init * ones(1, (T+T_horizon)/dt);
+%           cut_in_traj(:,:,4) = o4_init * ones(1, (T+T_horizon)/dt);
+%         cut_in_traj(:,:,5) = o5_init * ones(1, (T+T_horizon)/dt);
+%         cut_in_traj(:,:,6) = o6_init * ones(1, (T+T_horizon)/dt);
+        
+%         end
+       for nn=1:length(obs)
+        for i = 2:size(cut_in_traj,2)
+            cut_in_traj(1,i,nn) = cut_in_traj(1,i-1,nn) + cos(cut_in_traj(5,i-1,nn)) * cut_in_traj(4,i-1,nn) * dt;
+            cut_in_traj(2,i,nn) = cut_in_traj(2,i-1,nn) + sin(cut_in_traj(5,i-1,nn)) * cut_in_traj(4,i-1,nn) * dt;
+%             cut_in_traj(1,i,2) = cut_in_traj(1,i-1,2) + cos(cut_in_traj(4,i-1,2)) * cut_in_traj(3,i-1,2) * dt;
+%             cut_in_traj(2,i,2) = cut_in_traj(2,i-1,2) + sin(cut_in_traj(4,i-1,2)) * cut_in_traj(3,i-1,2) * dt;
+        end
+       end
+       
     elseif strcmp(Case_Code,'S1')
         obs = [];
         cut_in_traj = [];

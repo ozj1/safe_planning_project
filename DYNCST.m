@@ -124,29 +124,83 @@ for i = 1:1:NUM_CTRL
     Ui = U(:,i);
     % adaptive weight calculation
     if (adaptive == 1)
+
+        if length(obstacle)==0
+           w_jerk   =0.05.* ones(NUM_CTRL,1);
+           w_acc       = 10.* ones(NUM_CTRL,1);
+           w_del       = 20.* ones(NUM_CTRL,1);
+           w_ref       = 30.* ones(NUM_CTRL,1);... 3
+           w_vel       = 30.* ones(NUM_CTRL,1);
+        else
+       EgoPolicy=0;%initialization
+       Vtraffic=vref_road;%initialization
+       ghgh=length(obstacle);
+       %if there wasn't an car near than distance of 300 from our car, we spcify the index as a requirment for following eqs  
+      
+       for k = 1:length(obstacle)
+              index=k;
+              dxx_1=obstacle(k).traj(1,i)-Xi(1);%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
+              EgoLaneY = CenterLaneY_detector(Xi(2));
+              tgtLaneY = CenterLaneY_detector(obstacle(k).traj(2,i));
+              if EgoLaneY==tgtLaneY
+              if obstacle(k).traj(4,i)<Vtraffic 
+                 Vtraffic = obstacle(k).traj(4,i);
+                 index=k;
+              end
+              end
+         end 
+       
         for k = 1:length(obstacle)
+              dxx_1=obstacle(k).traj(1,i)-Xi(1);%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
+              EgoLaneY = CenterLaneY_detector(Xi(2));
+              tgtLaneY = CenterLaneY_detector(obstacle(k).traj(2,i));
 %         dx_wei = sqrt((Xi(1) - obstacle(1).traj(1,i,k))^2 + (Xi(2) - obstacle(1).traj(2,i,k))^2);
 %         w_ref = abs(obstacle(1).traj(3,i))/a_ref / exp(b_ref * dx_wei);
 %         w_vel = a_vel/abs(obstacle(1).traj(3,i)) * exp(b_vel * dx_wei);
 %         disp(length(obstacle))
 %         disp(obstacle(k).traj(1,i))
         % adaptive weight calculations
-        dx_wei_tags(k) = sqrt((Xi(1) - obstacle(k).traj(1,i))^2 + (Xi(2) - obstacle(k).traj(2,i))^2);% (k) is added by Omid to see all the targets
+%          dx_wei_tags(k) = sqrt((Xi(1) - obstacle(k).traj(1,i))^2 + (Xi(2) - obstacle(k).traj(2,i))^2);% (k) is added by Omid to see all the targets
 
+              dx_wei_tags(k) =obstacle(k).traj(1,i)-Xi(1);% (k) is added by Omid to see all the targets
+
+         %          if EgoLaneY~=tgtLaneY%In the velocity reference  we only account for the vehicles
+%              dx_wei_tags(k)=1000;
+%          end 
+          if EgoLaneY==tgtLaneY%In the velocity reference  we only account for the vehicles
+              deltaV=obstacle(k).traj(4,i)-vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
+              deltaX=obstacle(k).traj(1,i)-Xi(1);
+              EgoPolicy =EgoPolicy+deltaV/deltaX;% EgoPolicy can be lane changing for EgoPolicy<0
+
+         end 
         end
-        [dx_wei,index]=min(dx_wei_tags);% addaptive weight func modified by Omid
         
-         dx_1=abs(obstacle(index).traj(1,i)-Xi(1));%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
+   
 
-        if y_temp_final ~= y_final
-            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.05*dx_1)));
-            %vref=obstacle(index).traj(4,i);
-        elseif y_temp_final == y_final
-            vref=vref_road;
-        end
+         [dx_wei,index]=min(dx_wei_tags);% addaptive weight func modified by Omid
+%         ggg=round(Xi(2));
+%         if ggg~=4
+%         disp(index);
+%         end
+%         
+%         if index==4
+%          disp(index);
+%         end
+         dx_1=obstacle(index).traj(1,i)-Xi(1);%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
+         dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
+
+%         if y_temp_final ~= y_final
+            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.05*dx_1+0.2*dx_2)));
+%10 6 2020 if tgt was faster than vref_road then it is important to diminish the vlocoty of vref to vref_road
+            if vref>vref_road
+                vref=vref_road;
+            end
+            %             vref=obstacle(index).traj(4,i);
+%         elseif y_temp_final == y_final
+%             vref=vref_road;
+%         end
         y_temp=y_temp_final;
         dy_f=abs(y_final-Xi(2));%deltay_final
-        dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
         dy_t=abs(y_temp-Xi(2));%dy_t=deltay_temp is at max equal to the distance between the curent ego vehicle center lane with the other lane center if we want to go there as a step to reach th y_final
         B=dx_1+obstacle(index).traj(4,i)-0.6*vref-2*param.len;
         C=dx_1+obstacle(index).traj(4,i)-vref-10*param.len;
@@ -160,6 +214,10 @@ for i = 1:1:NUM_CTRL
         sss=(-log(1.00004-exp(-0.01*dy_t)));
         sss=1.057^(30*tanh(0.09*V));
         %w_ref(i)=(1+2*tanh(0.2*(dy_f+dx_2+V)));
+%         const1=-2.*atan(-30)+2.*atan(100*EgoPolicy);%acotd( X )
+        const1=-1.*atan(-30);%acotd( X )
+%         const1=2*acotd(-30);
+%abs(const1+1.*atan(100*EgoPolicy))*
         w_ref(i)=(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00004-exp(-0.01*dy_t)))*1.057^(30*tanh(0.09*V));
         w_vel(i)=(0.1+5*tanh(0.1*W+0.24*S))*(-log(1.00673-exp(-0.01*dy_t)));
         w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00673-exp(-0.01*dy_t)));
@@ -189,6 +247,7 @@ for i = 1:1:NUM_CTRL
 
 %         disp(num2str(w_ref),'   ',num2str());
         
+        end
     end
     
     % reference trajectory
@@ -239,14 +298,14 @@ for i = 1:1:NUM_CTRL
     cxx(:,:,i)  = cxx(:,:,i) + ddb;...                               4x4
     
     % ====================  penalizing distanc from the lane center (Omid)  ====================
-    CenterLaneY = CenterLaneY_detector(Xi(2));
-    g   = abs(Xi(2)-CenterLaneY) - 1;
-    dg 	= [0;1;0;0;0];
-    db  = q1_CenterLane * q2_CenterLane * exp(q2_CenterLane * g) * (dg);              % scalar * (4x1) 
-    ddb = q1_CenterLane * q2_CenterLane ^2 * exp(q2_CenterLane * g) * (dg) * (dg');   % scalar * (4x1) * (1x4)
-
-    cx(:,:,i)   = cx(:,:,i) + db;...                                 4x1
-    cxx(:,:,i)  = cxx(:,:,i) + ddb;...                               4x4
+%     CenterLaneY = CenterLaneY_detector(Xi(2));
+%     g   = abs(Xi(2)-CenterLaneY) - 1;
+%     dg 	= [0;1;0;0;0];
+%     db  = q1_CenterLane * q2_CenterLane * exp(q2_CenterLane * g) * (dg);              % scalar * (4x1) 
+%     ddb = q1_CenterLane * q2_CenterLane ^2 * exp(q2_CenterLane * g) * (dg) * (dg');   % scalar * (4x1) * (1x4)
+% 
+%     cx(:,:,i)   = cx(:,:,i) + db;...                                 4x1
+%     cxx(:,:,i)  = cxx(:,:,i) + ddb;...                               4x4
     
      % ====================acceleration limit ====================
 
@@ -379,14 +438,14 @@ cx(:,:,i)   = cx(:,:,i) + db;...                                 4x1
 cxx(:,:,i)  = cxx(:,:,i) + ddb;...                               4x4
 
 % ==================== penalizing distanc from the lane center (Omid) ====================
-    CenterLaneY = CenterLaneY_detector(Xi(2));
-    g   = abs(Xi(2)-CenterLaneY) - 1;
-    dg 	= [0;1;0;0;0];
-    db  = q1_CenterLane * q2_CenterLane * exp(q2_CenterLane * g) * (dg);              % scalar * (4x1) 
-    ddb = q1_CenterLane * q2_CenterLane ^2 * exp(q2_CenterLane * g) * (dg) * (dg');   % scalar * (4x1) * (1x4)
-
-    cx(:,:,i)   = cx(:,:,i) + db;...                                 4x1
-    cxx(:,:,i)  = cxx(:,:,i) + ddb;...                               4x4
+%     CenterLaneY = CenterLaneY_detector(Xi(2));
+%     g   = abs(Xi(2)-CenterLaneY) - 1;
+%     dg 	= [0;1;0;0;0];
+%     db  = q1_CenterLane * q2_CenterLane * exp(q2_CenterLane * g) * (dg);              % scalar * (4x1) 
+%     ddb = q1_CenterLane * q2_CenterLane ^2 * exp(q2_CenterLane * g) * (dg) * (dg');   % scalar * (4x1) * (1x4)
+% 
+%     cx(:,:,i)   = cx(:,:,i) + db;...                                 4x1
+%     cxx(:,:,i)  = cxx(:,:,i) + ddb;...                               4x4
 
 
 % obstacle term

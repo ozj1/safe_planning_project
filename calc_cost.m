@@ -111,9 +111,9 @@ for i = 1:1:NUM_CTRL
     cost = cost + q1_road * exp(q2_road * (road_low_lim - Xi(2)));
     
     % ==================== penalizing distanc from the lane center (Omid) ====================
-    CenterLaneY = CenterLaneY_detector(Xi(2));
-    g   = abs(Xi(2)-CenterLaneY) - 1;
-    cost = cost + q1_CenterLane * exp(q2_CenterLane * g) ;      
+%     CenterLaneY = CenterLaneY_detector(Xi(2));
+%     g   = abs(Xi(2)-CenterLaneY) - 1;
+%     cost = cost + q1_CenterLane * exp(q2_CenterLane * g) ;      
     
      % ================ other state limits (Omid)===================
     %min velocity constraint

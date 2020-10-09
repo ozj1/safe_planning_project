@@ -13,8 +13,8 @@ param.C_ar  = 80000;    % Cornering stiffness of each rear tire
 
 global a_dot_max a_dot_min v_dot_max v_dot_min delta_max delta_min v_min
 
-a_dot_max = 1.5;          % maximum jerk rate, m/s^3
-a_dot_min = -1.5;         % maximum deceleration rate, m/s^3
+a_dot_max = 0.9;          % maximum jerk rate, m/s^3
+a_dot_min = -0.9;         % maximum deceleration rate, m/s^3
 
 v_dot_max = 6;          % maximum acceleration rate, m/s^2
 v_dot_min = -4;         % maximum deceleration rate, m/s^2

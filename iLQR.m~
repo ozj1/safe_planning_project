@@ -51,7 +51,7 @@ global T_horizon
 global dt           
 global t_switch
 
-T = 20;             ... total job length%Omid it was 20 previously
+T = 30;             ... total job length%Omid it was 20 previously
 T_horizon = 4;      ... sliding horizon length
 dt = 0.1;           ... discretization time
 t_switch = 0.5;     ... 
@@ -82,7 +82,7 @@ global y_final y_temp_final y_temp_init traj_count
 
 % road upper and lower limitstraj_count
 global road_up_lim road_low_lim Lane_size
-global vref aref
+global vref aref vref_road
 % --- initialize trace data structure
 trace = struct('iter',nan,'lambda',nan,'dlambda',nan,'cost',nan);
 trace = repmat(trace,[maxIter 1]);
@@ -93,10 +93,15 @@ trace(1).dlambda = dlambda;
 %% initializaion
 % --- reference trajectory and simulation environment generation
 vref        = 15;
+vref_road=15;
 aref=0.;
 traj_count=1;
+ego_initial_y=-3*Lane_size/2.;
+scenario_ref='LaneChange';%'LaneChange';
+vehicle_type='Ego';%to make sure global variables of y_final and y_temp_final will update only in case Ego vehicle 
+
 tf=1;%seconds needed to do the lane change 
-ref_traj    = reftraj_gen(2*T, dt, -3*Lane_size/2.,20, 'LaneChange', aref,vref,tf,20);%it must be 3 for D1 and -3 for others 
+ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,20);%it must be 3 for D1 and -3 for others 
 top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref);
 side_lane   = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref);
 left_road   = reftraj_gen(2*T, dt, road_up_lim,20, 'Linear', aref, vref);
@@ -112,7 +117,7 @@ mid_road    = reftraj_gen(2*T, dt,  0,20, 'Linear', aref, vref);
 
 % --- initial state ---
 X_start     = zeros(X_DIM, 1);
-X_start(2)  = -3*Lane_size/2.;   ... initial y offset of -3m (on the ref trajectory)%it must be 3 for D1 and -3 for others 
+X_start(2)  = ego_initial_y;   ... initial y offset of -3m (on the ref trajectory)%it must be 3 for D1 and -3 for others 
 X_start(4)  = 8;   ... initial velocity of 14.0m/sec
 
 % --- goal state ---
@@ -139,7 +144,7 @@ U0(2,:) = 0.00 * ones(1, NUM_CTRL);     ... initial steering sequence
 %           to the next lane with target vehicles front and behind 
 %   O1--one front target vehicle (v=8m/s) to follow and lane changing 
 %           to the next lane with target vehicles behind (10m/s) go vehicle 15m/s
-scenario = 'Od2';
+scenario = 'Od4';
 [OBS, cut_in_traj] = scenario_generation(scenario);
 tgt_reach_traj = cut_in_traj;... this is used by reachability analysis
 
@@ -187,7 +192,7 @@ loop_time   = [];
 for i = 1:1:NUM_TOTAL
     %y_temp_final y_temp_init;
     % check if the trajectory has reached to its temperary destinations      
-    if y_temp_final ~= y_final%Omid: here we want to update  
+    if y_temp_final ~= y_final & scenario_ref=='LaneChange' %Omid: here we want to update, we don't want to generate and update linear ref trag  
         
        if i>NUM_CTRL/5 & i<NUM_TOTAL-NUM_CTRL/5
            traj_dy_dist = zeros(NUM_CTRL/5,1);
@@ -198,15 +203,18 @@ for i = 1:1:NUM_TOTAL
             end
             if sum_traj_dy_dist < 0.7%Omid: here we want to update  
                 traj_count=traj_count+1;
-                ref_traj    = reftraj_gen(2*T, dt, -3*Lane_size/2.,20, 'LaneChange', aref,vref,tf,X_planned(1,i-1));%we need to update the x0 from 20 to current position of ego vehicle
+                ref_traj    = reftraj_gen(2*T, dt, ego_initial_y,20, scenario_ref, aref,vref,tf,X_planned(1,i-1));%we need to update the x0 from 20 to current position of ego vehicle
 
             end
        end
     end
-    if ref_traj(1,4) ~= vref% here we want to update ref traj if reftraj(4)~= updated vref which may be equal to target velocity if we want to do lane keeping once we are in tmpoary destinations 
-          %vref i constantly updating in DYNCST
-          ref_traj    = reftraj_gen(2*T, dt, -3*Lane_size/2.,20, 'LaneChange', aref,vref,tf,X_planned(1,i-1));%we need to update the x0 from 20 to current position of ego vehicle
-    end
+       if ref_traj(1,4) ~= vref% here we want to update ref traj if reftraj(4)~= updated vref which may be equal to target velocity if we want to do lane keeping once we are in tmpoary destinations 
+             disp(ref_traj(1,4))
+        %vref i constantly updating in DYNCST
+             ref_traj    = reftraj_gen(2*T, dt, ego_initial_y,20, scenario_ref, aref,vref,tf,X_planned(1,i-1));%we need to update the x0 from 20 to current position of ego vehicle
+      end
+    
+    
     
     
     tic
@@ -447,6 +455,9 @@ if plot_gif == 1
             obs_rec(j) = plot(x_obs(i,:,j), y_obs(i,:,j),'m','LineWidth', 1);
             hold on
         end
+        if length(OBS)==0
+            obs_rec=0;
+        end
 
     %     obs1_ellip_x = (obs1_axis(1,i))*cos(ellipse_ang);
     %     obs1_ellip_y = (obs1_axis(2,i))*sin(ellipse_ang);
@@ -482,17 +493,17 @@ if plot_gif == 1
     %         lp = plot(obs_long(1,:,i), obs_long(2,:,i), 'c*');
         end
 
-        xlim([0 250]); ylim([(road_low_lim-2) (road_up_lim+2)]);
+        xlim([0 350]); ylim([(road_low_lim-2) (road_up_lim+2)]);
         xlabel('x(m)', 'FontSize', 25); ylabel('y(m)', 'FontSize', 25);
     %     legend('vehicle','planned','ref','obstacle','planning horizon','Location','best');
 
         % set plot position
         x0 = 0;
         y0 = 0;
-        width = 960;
-        height = 540;
-    %     width = 1920;
-    %     height = 1080;
+%         width = 960;
+%         height = 540;
+        width = 1920;
+        height = 1080;
         set(gcf,'position',[x0,y0,width,height]);
 
         drawnow;
@@ -509,11 +520,15 @@ if plot_gif == 1
         delete(p)
     %     delete(o)
         delete(r)
-        delete(obs_rec)
-        if use_prediction == 1
+        if length(OBS)~=0
+
+           delete(obs_rec)
+           if use_prediction == 1
             delete(bb)
     %         delete(lp)
+           end
         end
+        
     end
 end
 
@@ -587,7 +602,9 @@ ylim([-8 8]);
 % velocity profile
 subplot(3, 1, 2);
 yyaxis left
+if length(OBS)~=0
 plot(obs_traj(4,:,1), 'm', 'LineWidth', 2);
+end
 hold on
 plot(X_planned(4, :), '-b', 'LineWidth', 2);
 ylabel('Velocity (m/s)', 'FontSize', 25);

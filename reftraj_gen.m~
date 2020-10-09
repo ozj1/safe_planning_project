@@ -31,7 +31,7 @@ function ref = reftraj_gen(T_tot, dt, y_init,x_init, varargin)
     % required for weight calculation in DYNCST 
     global y_final y_temp_final y_temp_init traj_count
     % setup default fields
-    optargs = {'Linear' '' '' '3' '20' 'Road_lane'};%Omid: I changed {'Linear' '' '3' '20'} to {'Linear' '' '3' '0'}
+    optargs = {'Linear' '' '' '3' '20' '0'};%Omid: I changed {'Linear' '' '3' '20'} to {'Linear' '' '3' '0'}
 
     % fill in the cell with incoming data
     optargs(1:numvarargs) = varargin;
@@ -55,7 +55,7 @@ vehicle_type=cell2mat(optargs(6));
         v_ref     = v_des * ones(size(x_ref));
         theta_ref = zeros(size(x_ref));%Omid all tetha qual to zero as it is linear
         ref       = [x_ref' y_ref' a_ref' v_ref' theta_ref'];
-        if strcmp(vehicle_type,'Ego')
+         if vehicle_type=='Ego'
         y_final=y_ref(1);
          y_temp_final = y_final;
          end
