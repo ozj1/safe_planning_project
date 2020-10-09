@@ -74,7 +74,7 @@ vehicle_type=cell2mat(optargs(6));
     if Phase==1
          y_temp_init=CenterLaneY_detector(y_init);
          y_temp_final=y_temp_init+Lane_size;% by default we go to th upper lane for overtaking
-         if y_temp_final>road_up_lim%if we passd the road upper boundary we go one lane down, as simple as that, we never need to be worried about passing the lower road boundary 
+         if y_temp_final>road_up_lim% if we passd the road upper boundary we go one lane down, as simple as that, we never need to be worried about passing the lower road boundary 
             y_temp_final=y_temp_init-Lane_size;
 
          
