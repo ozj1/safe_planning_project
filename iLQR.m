@@ -83,6 +83,10 @@ global y_final y_temp_final y_temp_init traj_count
 % road upper and lower limitstraj_count
 global road_up_lim road_low_lim Lane_size
 global vref aref vref_road
+
+ % for obstacle overtaking until the road is clear 
+ global EgoPolicy Phase
+
 % --- initialize trace data structure
 trace = struct('iter',nan,'lambda',nan,'dlambda',nan,'cost',nan);
 trace = repmat(trace,[maxIter 1]);
@@ -192,6 +196,16 @@ loop_time   = [];
 
 % iLQR
 for i = 1:1:NUM_TOTAL
+    
+    %we have a two phases planner: phase 1 for  for obstacle overtaking until the road is clear then phase 2 for going to the desired destination if we're not on it already 
+    % ref generation for obstacle overtaking until the road is clear 
+    if Phase==1
+         if EgoPolicy<0
+        
+         else
+         end
+    elseif Phase==2
+    
     %y_temp_final y_temp_init;
     % check if the trajectory has reached to its temperary destinations      
     if y_temp_final ~= y_final & scenario_ref=='LaneChange' %Omid: here we want to update, we don't want to generate and update linear ref trag  
@@ -214,9 +228,10 @@ for i = 1:1:NUM_TOTAL
              disp(ref_traj(1,4))
         %vref i constantly updating in DYNCST
              ref_traj    = reftraj_gen(2*T, dt, ego_initial_y,20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-      end
+       end
     
-    
+    end
+     
     
     
     tic
