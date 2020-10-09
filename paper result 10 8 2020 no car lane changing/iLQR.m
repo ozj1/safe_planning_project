@@ -479,6 +479,12 @@ if plot_gif == 1
         hold on
         plot(right_road(:,1),right_road(:,2),'r');  
         hold on
+        if road_up_lim >Lane_size%we only want to draw these lines for highway more than 2 lanes 
+            plot(left_road_half(:,1),left_road_half(:,2),'--r');  
+        hold on
+        plot(right_road_half(:,1),right_road_half(:,2),'--r');  
+        hold on
+        end
 %         plot(mid_road(:,1),mid_road(:,2),'r');  
         plot(mid_road(:,1),mid_road(:,2),'--r'); %added by Omid for one sided 4 lanes highway
         hold on

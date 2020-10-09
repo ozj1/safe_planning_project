@@ -26,8 +26,8 @@ v_min=1.;
 
 %road globad values- this part added b Omid
 global road_up_lim road_low_lim Lane_size
-road_up_lim =3;
-road_low_lim=-3;
+road_up_lim =6;
+road_low_lim=-6;
 Lane_size=3;
 
 %for tailgate
