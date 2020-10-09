@@ -200,7 +200,7 @@ for i = 1:1:NUM_TOTAL
     %we have a two phases planner: phase 1 for  for obstacle overtaking until the road is clear then phase 2 for going to the desired destination if we're not on it already 
     % ref generation for obstacle overtaking until the road is clear 
     if Phase==1
-         if EgoPolicy<0
+         if EgoPolicy<0 %then we need to do a lane change 
         
          else
          end

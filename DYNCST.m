@@ -127,13 +127,13 @@ for i = 1:1:NUM_CTRL
     % adaptive weight calculation
     if (adaptive == 1)
 
-        if length(obstacle)==0
-           w_jerk   =0.05.* ones(NUM_CTRL,1);
-           w_acc       = 10.* ones(NUM_CTRL,1);
-           w_del       = 20.* ones(NUM_CTRL,1);
-           w_ref       = 30.* ones(NUM_CTRL,1);... 3
-           w_vel       = 30.* ones(NUM_CTRL,1);
-        else
+%         if length(obstacle)==0
+%            w_jerk   =0.05.* ones(NUM_CTRL,1);
+%            w_acc       = 10.* ones(NUM_CTRL,1);
+%            w_del       = 20.* ones(NUM_CTRL,1);
+%            w_ref       = 30.* ones(NUM_CTRL,1);... 3
+%            w_vel       = 30.* ones(NUM_CTRL,1);
+%         else
        EgoPolicy=0;%initialization meaning lane keeping by default 
        Vtraffic=vref_road;%initialization
        ghgh=length(obstacle);
@@ -151,7 +151,7 @@ for i = 1:1:NUM_CTRL
               end
               end
          end 
-       close_car=1000;%initalization large distance
+       closest_car=1000;%initalization large distance
        index=-1;%initalization index, we need to evaluate each time the nvironment to find the correct trget vehicle and if there's no car available in our lane index should be NaN 
         for k = 1:length(obstacle)
               dxx_1=obstacle(k).traj(1,i)-Xi(1);%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
@@ -175,8 +175,8 @@ for i = 1:1:NUM_CTRL
               deltaX=obstacle(k).traj(1,i)-Xi(1);
               EgoPolicy =EgoPolicy+deltaV/deltaX;% EgoPolicy can be lane changing for EgoPolicy<0
               %finding the index of target vhicle with min distance if it's in the same lane with ego car   
-              if dx_wei_tags(k)<close_car
-              close_car=dx_wei_tags(k);
+              if abs(dx_wei_tags(k))<closest_car
+              closest_car=dx_wei_tags(k);
               index=k;
               end
               
@@ -196,12 +196,14 @@ for i = 1:1:NUM_CTRL
 %         end
 
          if index==-1
+          Phase=2;
          dx_1=Imag_targetCar_dis;
          dx_2=abs(Xi(2)-Xi(2));
          vref=floor(vref_road+abs((vref_road+0.1-vref_road)*tanh(0.05*dx_1+0.2*dx_2)));
          B=dx_1+vref_road-0.6*vref-2*param.len;
          C=dx_1+vref_road-vref-10*param.len;
          else
+             Phase=1;
              dx_1=obstacle(index).traj(1,i)-Xi(1);%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
              dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
 
@@ -269,7 +271,7 @@ for i = 1:1:NUM_CTRL
 
 %         disp(num2str(w_ref),'   ',num2str());
         
-        end
+%         end
     end
     
     % reference trajectory
