@@ -99,11 +99,28 @@ trace(1).dlambda = dlambda;
 vref        = 15;
 vref_road=15;
 aref=0.;
-traj_count=1;
+traj_count=0;
 ego_initial_y=-Lane_size/2.;
 scenario_ref='LaneChange';%'LaneChange';
+%vehicle objects
+egoV=vehicle;
 vehicle_type='Ego';%to make sure global variables of y_final and y_temp_final will update only for case of Ego vehicle 
 Phase=1;
+%specfing th final destintion of go vehicle
+y_init=ego_initial_y;
+        if (y_init == -Lane_size)
+            y_final = Lane_size;
+        elseif (y_init == Lane_size)
+            y_final = -Lane_size;
+        elseif (y_init == Lane_size/2.)
+            y_final = -Lane_size/2.;
+        elseif (y_init == -Lane_size/2.)
+            y_final = Lane_size/2.;
+        elseif (y_init == -3*Lane_size/2.)
+            y_final = 3*Lane_size/2.;
+        elseif (y_init == 3*Lane_size/2.)
+            y_final = 1*Lane_size/2.;
+        end
 tf=1;%seconds needed to do the lane change 
 ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,20,vehicle_type);%it must be 3 for D1 and -3 for others 
 top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref);
@@ -194,47 +211,61 @@ obs_short   = [];
 obs_long    = [];
 loop_time   = [];
 
+
 % iLQR
 for i = 1:1:NUM_TOTAL
     
     %we have a two phases planner: phase 1 for  for obstacle overtaking until the road is clear then phase 2 for going to the desired destination if we're not on it already 
     % ref generation for obstacle overtaking until the road is clear 
-    if Phase==1
-         if EgoPolicy<0 %then we need to do a lane change 
-        scenario_ref='LaneChange';
-        ref_traj    = reftraj_gen(2*T, dt, X_planned(2,i),20, scenario_ref, aref,vref,tf,X_planned(1,i),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-
-         else
-        scenario_ref='Linear';
-        ref_traj    = reftraj_gen(2*T, dt, X_planned(2,i),20, scenario_ref, aref,vref,tf,X_planned(1,i),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-
-         end
-    elseif Phase==2
-    
-    %y_temp_final y_temp_init;
-    % check if the trajectory has reached to its temperary destinations      
-    if y_temp_final ~= y_final & scenario_ref=='LaneChange' %Omid: here we want to update, we don't want to generate and update linear ref trag  
-        
-       if i>NUM_CTRL/5 & i<NUM_TOTAL-NUM_CTRL/5
-           traj_dy_dist = zeros(NUM_CTRL/5,1);
+    if i>NUM_CTRL/5 & i<NUM_TOTAL-NUM_CTRL/5
+    traj_dy_dist = zeros(NUM_CTRL/5,1);
            sum_traj_dy_dist=0;
             for jj = i-NUM_CTRL/5:1:i-1
                 traj_dy_dist(jj) = abs(X_planned(2,jj) - y_temp_final);
                 sum_traj_dy_dist=sum_traj_dy_dist+traj_dy_dist(jj);
             end
             if sum_traj_dy_dist < 0.7%Omid: here we want to update  
-                traj_count=traj_count+1;
-                ref_traj    = reftraj_gen(2*T, dt, ego_initial_y,20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-
-            end
-       end
+               
+        if Phase==1
+         if EgoPolicy<0 %then we need to do a lane change 
+        scenario_ref='LaneChange';
+        ref_traj    = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+        ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
+         else
+        scenario_ref='Linear';
+        ref_traj  = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+        ref_traj_fractions((i-1):2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
+         end
+    elseif Phase==2
+    if strcmp(scenario_ref,'Linear')
+    disp('nnnm');
     end
-       if ref_traj(1,4) ~= vref% here we want to update ref traj if reftraj(4)~= updated vref which may be equal to target velocity if we want to do lane keeping once we are in tmpoary destinations 
-             disp(ref_traj(1,4))
-        %vref i constantly updating in DYNCST
-             ref_traj    = reftraj_gen(2*T, dt, ego_initial_y,20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-       end
+    scenario_ref='LaneChange';
+    %y_temp_final y_temp_init;
+    % check if the trajectory has reached to its temperary destinations      
+    if y_temp_final ~=y_final & strcmp(scenario_ref,'LaneChange') %Omid: here we want to update, we don't want to generate and update linear ref trag  
+        
+           
+                
+                traj_count=traj_count+1;
+                ref_traj   = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+        ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
+            
+       
+    end
     
+       
+    
+        end
+            end
+%     if ref_traj(1,4) ~= vref% here we want to update ref traj if reftraj(4)~= updated vref which may be equal to target velocity if we want to do lane keeping once we are in tmpoary destinations 
+% %              disp(ref_traj(1,4))
+%         %vref i constantly updating in DYNCST
+%              ref_traj    = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+%              ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(i-1:2*NUM_TOTAL,:);
+%              disp(ref_traj(1,4))
+% 
+%     end
     end
      
     
@@ -469,7 +500,7 @@ if plot_gif == 1
         % draw planned trajectory and the reference trajectory
         plot(X_planned(1,:), X_planned(2,:),'b');
         hold on
-        plot(ref_traj(:,1),ref_traj(:,2),'--g');  
+        plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'--g');  
         hold on
 
         % draw obstacle
@@ -571,7 +602,7 @@ it = 200;
 % environment visualizations
 plot(side_lane(:,1),side_lane(:,2)+6,'--r');  
 hold on
-plot(ref_traj(:,1),ref_traj(:,2),'-.k');  
+plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'-.k');  
 hold on
 plot(side_lane(:,1),side_lane(:,2),'-.k');  
 hold on

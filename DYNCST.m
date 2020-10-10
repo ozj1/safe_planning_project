@@ -197,6 +197,7 @@ for i = 1:1:NUM_CTRL
 
          if index==-1
           Phase=2;
+%           disp(Phase);
          dx_1=Imag_targetCar_dis;
          dx_2=abs(Xi(2)-Xi(2));
          vref=floor(vref_road+abs((vref_road+0.1-vref_road)*tanh(0.05*dx_1+0.2*dx_2)));
@@ -204,6 +205,7 @@ for i = 1:1:NUM_CTRL
          C=dx_1+vref_road-vref-10*param.len;
          else
              Phase=1;
+%              disp(Phase);
              dx_1=obstacle(index).traj(1,i)-Xi(1);%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
              dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
 
@@ -225,7 +227,8 @@ for i = 1:1:NUM_CTRL
 %             vref=vref_road;
 %         end
         y_temp=y_temp_final;
-        dy_f=abs(y_final-Xi(2));%deltay_final
+        dy_f=abs(y_temp_final-Xi(2));%deltay_final
+%         dy_f=abs(y_final-Xi(2));%deltay_final
         dy_t=abs(y_temp-Xi(2));%dy_t=deltay_temp is at max equal to the distance between the curent ego vehicle center lane with the other lane center if we want to go there as a step to reach th y_final
         
         
