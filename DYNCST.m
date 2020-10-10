@@ -175,9 +175,11 @@ for i = 1:1:NUM_CTRL
               deltaX=obstacle(k).traj(1,i)-Xi(1);
               EgoPolicy =EgoPolicy+deltaV/deltaX;% EgoPolicy can be lane changing for EgoPolicy<0
               %finding the index of target vhicle with min distance if it's in the same lane with ego car   
-              if abs(dx_wei_tags(k))<closest_car
+              if abs(dx_wei_tags(k))<abs(closest_car)
               closest_car=dx_wei_tags(k);
+              if closest_car>0
               index=k;
+              end
               end
               
          end 
