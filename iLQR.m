@@ -101,7 +101,7 @@ vref_road=15;
 aref=0.;
 traj_count=0;
 ego_initial_y=-Lane_size/2.;
-scenario_ref='LaneChange';%'LaneChange';
+scenario_ref='Linear';%'LaneChange';
 %vehicle objects
 egoV=vehicle;
 vehicle_type='Ego';%to make sure global variables of y_final and y_temp_final will update only for case of Ego vehicle 
@@ -122,7 +122,7 @@ y_init=ego_initial_y;
             y_final = 1*Lane_size/2.;
         end
 tf=1;%seconds needed to do the lane change 
-ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,20,vehicle_type);%it must be 3 for D1 and -3 for others 
+ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
 top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref);
 side_lane   = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref);
 left_road   = reftraj_gen(2*T, dt, road_up_lim,20, 'Linear', aref, vref);
@@ -224,7 +224,7 @@ for i = 1:1:NUM_TOTAL
                 traj_dy_dist(jj) = abs(X_planned(2,jj) - y_temp_final);
                 sum_traj_dy_dist=sum_traj_dy_dist+traj_dy_dist(jj);
             end
-            if sum_traj_dy_dist < 0.7%Omid: here we want to update  
+            if sum_traj_dy_dist < 3.2%Omid: here we want to update  0.7
                
         if Phase==1
          if EgoPolicy<0 %then we need to do a lane change 
@@ -500,8 +500,8 @@ if plot_gif == 1
         % draw planned trajectory and the reference trajectory
         plot(X_planned(1,:), X_planned(2,:),'b');
         hold on
-        plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'--g');  
-        hold on
+%         plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'--g');  
+%         hold on
 
         % draw obstacle
         for j = 1:length(OBS)
@@ -602,8 +602,8 @@ it = 200;
 % environment visualizations
 plot(side_lane(:,1),side_lane(:,2)+6,'--r');  
 hold on
-plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'-.k');  
-hold on
+% plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'-.k');  
+% hold on
 plot(side_lane(:,1),side_lane(:,2),'-.k');  
 hold on
 plot(left_road(:,1),left_road(:,2),'k');  

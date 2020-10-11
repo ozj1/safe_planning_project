@@ -122,7 +122,7 @@ y_init=ego_initial_y;
             y_final = 1*Lane_size/2.;
         end
 tf=1;%seconds needed to do the lane change 
-ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,20,vehicle_type);%it must be 3 for D1 and -3 for others 
+ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
 top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref);
 side_lane   = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref);
 left_road   = reftraj_gen(2*T, dt, road_up_lim,20, 'Linear', aref, vref);
@@ -230,11 +230,11 @@ for i = 1:1:NUM_TOTAL
          if EgoPolicy<0 %then we need to do a lane change 
         scenario_ref='LaneChange';
         ref_traj    = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-        ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(i-1:2*NUM_TOTAL,:);
+        ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
          else
         scenario_ref='Linear';
         ref_traj  = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-        ref_traj_fractions((i-1):2*NUM_TOTAL,:)=ref_traj((i-1):2*NUM_TOTAL,:);
+        ref_traj_fractions((i-1):2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
          end
     elseif Phase==2
     if strcmp(scenario_ref,'Linear')
@@ -249,7 +249,7 @@ for i = 1:1:NUM_TOTAL
                 
                 traj_count=traj_count+1;
                 ref_traj   = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-        ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(i-1:2*NUM_TOTAL,:);
+        ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
             
        
     end
