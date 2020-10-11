@@ -217,7 +217,7 @@ for i = 1:1:NUM_TOTAL
     
     %we have a two phases planner: phase 1 for  for obstacle overtaking until the road is clear then phase 2 for going to the desired destination if we're not on it already 
     % ref generation for obstacle overtaking until the road is clear 
-    if i>NUM_CTRL/5 & i<NUM_TOTAL-NUM_CTRL/5
+    if i>NUM_CTRL/5 && i<NUM_TOTAL-NUM_CTRL/5
     traj_dy_dist = zeros(NUM_CTRL/5,1);
            sum_traj_dy_dist=0;
             for jj = i-NUM_CTRL/5:1:i-1
@@ -243,11 +243,11 @@ for i = 1:1:NUM_TOTAL
     scenario_ref='LaneChange';
     %y_temp_final y_temp_init;
     % check if the trajectory has reached to its temperary destinations      
-    if y_temp_final ~=y_final & strcmp(scenario_ref,'LaneChange') %Omid: here we want to update, we don't want to generate and update linear ref trag  
+    if y_temp_final ~=y_final && strcmp(scenario_ref,'LaneChange') %Omid: here we want to update, we don't want to generate and update linear ref trag  
         
            
                 
-                traj_count=traj_count+1;
+%                 traj_count=traj_count+1;
                 ref_traj   = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
         ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
             
