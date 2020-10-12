@@ -134,13 +134,12 @@ for i = 1:1:NUM_CTRL
 %            w_ref       = 30.* ones(NUM_CTRL,1);... 3
 %            w_vel       = 30.* ones(NUM_CTRL,1);
 %         else
-       EgoPolicy=0.;EgoPolicy1=0;EgoPolicy2tot=1;EgoPolicy2=1.* ones(20,1);counter=0;%initialization meaning lane keeping by default 
-       %EgoPolicy2=1.* ones(20,1); b default for checking 20 cars in the other lane which is more than enough
+       EgoPolicy=0.;EgoPolicy1=0;EgoPolicy2=1;counter=0;%initialization meaning lane keeping by default 
        % the default value for EgoPolicy2 is 1 which will mk equal to 1 if y_temp_final is not the first or the last lane of the road 
 
        %if there wasn't an car near than distance of 300 from our car, we spcify the index as a requirment for following eqs  
-       ref_dist=10000.;closest_car=ref_dist; closest_back_car_dist=ref_dist;closest_front_car_dist=ref_dist;%initalization large distance
-       index=-1;front_index=1.5;back_index=1.5;%initalization index, we need to evaluate each time the nvironment to find the correct trget vehicle and if there's no car available in our lane index should be NaN 
+       closest_car=1000;%initalization large distance
+       index=-1;%initalization index, we need to evaluate each time the nvironment to find the correct trget vehicle and if there's no car available in our lane index should be NaN 
         for k = 1:length(obstacle)
               EgoLaneY = CenterLaneY_detector(Xi(2));
               tgtLaneY = CenterLaneY_detector(obstacle(k).traj(2,i));
@@ -189,34 +188,25 @@ for i = 1:1:NUM_CTRL
 
               deltaV=obstacle(k).traj(4,i)-vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
               deltaX=obstacle(k).traj(1,i)-Xi(1);
-
-%               if counter==0%we use a counter to not to add the default value of EgoPolicy2=1 here
+              if counter==0%we use a counter to not to add the default value of EgoPolicy2=1 here
               
                   if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
-                     if deltaX<closest_front_car_dist
-                      closest_front_car_dist=deltaX;
-                      front_index=k;
-                     end
-                  EgoPolicy2(k) =1.1*tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+                  EgoPolicy2 =1.1*tanh((deltaV/deltaX)*abs(deltaX/deltaV));
                   elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
-                  EgoPolicy2(k) =0;  
+                  EgoPolicy2 =0;  
                   elseif deltaX<0
-                      if abs(deltaX)<closest_back_car_dist
-                      closest_back_car_dist=abs(deltaX);
-                      back_index=k;
-                     end
-                  EgoPolicy2(k) =tanh((deltaV/deltaX)*abs(deltaX/deltaV)); 
+                  EgoPolicy2 =tanh((deltaV/deltaX)*abs(deltaX/deltaV)); 
                   end
-%                   counter=counter+1;
-%               else
-%               if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
-%                   EgoPolicy2 =EgoPolicy2+1.1*tanh((deltaV/deltaX)*abs(deltaX/deltaV));
-%               elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
-%                   EgoPolicy2 =EgoPolicy2+0;  
-%               elseif deltaX<0
-%                   EgoPolicy2 =EgoPolicy2+tanh((deltaV/deltaX)*abs(deltaX/deltaV));
-%               end
-%               end
+                  counter=counter+1;
+              else
+              if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
+                  EgoPolicy2 =EgoPolicy2+1.1*tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+              elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
+                  EgoPolicy2 =EgoPolicy2+0;  
+              elseif deltaX<0
+                  EgoPolicy2 =EgoPolicy2+tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+              end
+              end
           end    
           end
            end 
@@ -224,16 +214,7 @@ for i = 1:1:NUM_CTRL
            end
         end
         
-        %this part is addd to only account for closest front and back cars in calculating EgoPolicy2tot for the first and last road lanes  
-        if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
-        EgoPolicy2tot=EgoPolicy2(front_index)+EgoPolicy2(back_index);
-        elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
-        EgoPolicy2tot=EgoPolicy2(back_index);
-        elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
-        EgoPolicy2tot=EgoPolicy2(front_index);
-        end
-        
-        mk=(EgoPolicy2tot+abs(EgoPolicy2tot))/(2);
+        mk=(EgoPolicy2+abs(EgoPolicy2))/(2);
         EgoPolicy=mk*EgoPolicy1;
    
 
