@@ -51,7 +51,9 @@ vehicle_type=cell2mat(optargs(6));
         v_des     = tgt_vel;
         a_des=tgt_acc;
         interval  = v_des * dt;
-        x_ref     = 0:interval:interval*(T_tot/dt);
+%         dbstop if error
+%         whos x0 interval
+        x_ref     = x0:interval:interval*(T_tot/dt);% x0 should be used instead of 0
         y_ref     = vehicleY*ones(size(x_ref));
         a_ref     = a_des * ones(size(x_ref));
         v_ref     = v_des * ones(size(x_ref));

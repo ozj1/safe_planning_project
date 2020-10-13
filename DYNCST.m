@@ -134,12 +134,14 @@ for i = 1:1:NUM_CTRL
 %            w_ref       = 30.* ones(NUM_CTRL,1);... 3
 %            w_vel       = 30.* ones(NUM_CTRL,1);
 %         else
-       EgoPolicy=0.;EgoPolicy1=0;EgoPolicy2tot=1;EgoPolicy2=1.* ones(20,1);counter=0;%initialization meaning lane keeping by default 
+
+       EgoPolicy1=0;EgoPolicy2tot=1;EgoPolicy2=1.* ones(20,1);counter=0;%initialization meaning lane keeping by default 
        %EgoPolicy2=1.* ones(20,1); b default for checking 20 cars in the other lane which is more than enough
        % the default value for EgoPolicy2 is 1 which will mk equal to 1 if y_temp_final is not the first or the last lane of the road 
 
        %if there wasn't an car near than distance of 300 from our car, we spcify the index as a requirment for following eqs  
        ref_dist=10000.;closest_car=ref_dist; closest_back_car_dist=ref_dist;closest_front_car_dist=ref_dist;%initalization large distance
+       ccie=0;%closest_car_in_egolane=0;
        index=-1;front_index=1.5;back_index=1.5;%initalization index, we need to evaluate each time the nvironment to find the correct trget vehicle and if there's no car available in our lane index should be NaN 
         for k = 1:length(obstacle)
               EgoLaneY = CenterLaneY_detector(Xi(2));
@@ -175,6 +177,11 @@ for i = 1:1:NUM_CTRL
               closest_car=deltaX;
               if closest_car>0
               index=k;
+                  if   deltaV~=0 && deltaX~=0
+                      EgoPolicy2(k) =tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+                  else
+                      EgoPolicy2(k) =0;
+                  end
               end
               end
          else   % as we need to make sure to not to double count the tgt vehicles, for 2 lanes roads if ytempfinal is linear and  tgtLaneY==y_temp_final then there's a chance to overcount the tagt vehicle here, that's h we need this else here   
@@ -197,7 +204,11 @@ for i = 1:1:NUM_CTRL
                       closest_front_car_dist=deltaX;
                       front_index=k;
                      end
-                  EgoPolicy2(k) =1.1*tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+                  if   deltaV~=0 && deltaX~=0
+                      EgoPolicy2(k) =1.1*tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+                  else
+                      EgoPolicy2(k) =0;
+                  end
                   elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
                   EgoPolicy2(k) =0;  
                   elseif deltaX<0
@@ -205,7 +216,11 @@ for i = 1:1:NUM_CTRL
                       closest_back_car_dist=abs(deltaX);
                       back_index=k;
                      end
-                  EgoPolicy2(k) =tanh((deltaV/deltaX)*abs(deltaX/deltaV)); 
+                  if   deltaV~=0 && deltaX~=0
+                      EgoPolicy2(k) =tanh((deltaV/deltaX)*abs(deltaX/deltaV)); 
+                  else
+                      EgoPolicy2(k) =0;
+                  end
                   end
 %                   counter=counter+1;
 %               else
@@ -223,19 +238,36 @@ for i = 1:1:NUM_CTRL
 %          end
            end
         end
-        
-        %this part is addd to only account for closest front and back cars in calculating EgoPolicy2tot for the first and last road lanes  
-        if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
-        EgoPolicy2tot=EgoPolicy2(front_index)+EgoPolicy2(back_index);
-        elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
-        EgoPolicy2tot=EgoPolicy2(back_index);
-        elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
-        EgoPolicy2tot=EgoPolicy2(front_index);
+        if index~=-1 && front_index~=1.5
+        if abs(obstacle(index).traj(1,i)-Xi(1))<abs(obstacle(front_index).traj(1,i)-Xi(1))
+        ccie=1;
+        end
         end
         
+       if i<5% as we don't want an early dciion making. for example short term prediction part can see the next 4s upfront and if we  
+        %this part is addd to only account for closest front and back cars in calculating EgoPolicy2tot for the first and last road lanes  
+              %ccie*EgoPolicy2(index)
+              
+       if index~=-1
+              if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
+              EgoPolicy2tot=EgoPolicy2(back_index)-0.5*ccie*EgoPolicy2(index)+EgoPolicy2(front_index);
+              elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
+              EgoPolicy2tot=EgoPolicy2(back_index)-0.5*ccie*EgoPolicy2(index);
+              elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
+              EgoPolicy2tot=EgoPolicy2(front_index)-0.5*ccie*EgoPolicy2(index);
+              end
+       else
+              if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
+              EgoPolicy2tot=EgoPolicy2(back_index)+EgoPolicy2(front_index);
+              elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
+              EgoPolicy2tot=EgoPolicy2(back_index);
+              elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
+              EgoPolicy2tot=EgoPolicy2(front_index);
+              end
+       end
         mk=(EgoPolicy2tot+abs(EgoPolicy2tot))/(2);
         EgoPolicy=mk*EgoPolicy1;
-   
+       end
 
 %          [dx_wei,index]=min(dx_wei_tags);% addaptive weight func modified by Omid
 %         ggg=round(Xi(2));

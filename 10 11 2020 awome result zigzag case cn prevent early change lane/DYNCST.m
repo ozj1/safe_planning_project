@@ -134,12 +134,15 @@ for i = 1:1:NUM_CTRL
 %            w_ref       = 30.* ones(NUM_CTRL,1);... 3
 %            w_vel       = 30.* ones(NUM_CTRL,1);
 %         else
-       EgoPolicy=0;EgoPolicy1=0;EgoPolicy2=1;counter=0;%initialization meaning lane keeping by default 
+
+       EgoPolicy1=0;EgoPolicy2tot=1;EgoPolicy2=1.* ones(20,1);counter=0;%initialization meaning lane keeping by default 
+       %EgoPolicy2=1.* ones(20,1); b default for checking 20 cars in the other lane which is more than enough
        % the default value for EgoPolicy2 is 1 which will mk equal to 1 if y_temp_final is not the first or the last lane of the road 
 
        %if there wasn't an car near than distance of 300 from our car, we spcify the index as a requirment for following eqs  
-       closest_car=1000;%initalization large distance
-       index=-1;%initalization index, we need to evaluate each time the nvironment to find the correct trget vehicle and if there's no car available in our lane index should be NaN 
+       ref_dist=10000.;closest_car=ref_dist; closest_back_car_dist=ref_dist;closest_front_car_dist=ref_dist;%initalization large distance
+       ccie=0;%closest_car_in_egolane=0;
+       index=-1;front_index=1.5;back_index=1.5;%initalization index, we need to evaluate each time the nvironment to find the correct trget vehicle and if there's no car available in our lane index should be NaN 
         for k = 1:length(obstacle)
               EgoLaneY = CenterLaneY_detector(Xi(2));
               tgtLaneY = CenterLaneY_detector(obstacle(k).traj(2,i));
@@ -174,6 +177,11 @@ for i = 1:1:NUM_CTRL
               closest_car=deltaX;
               if closest_car>0
               index=k;
+                  if   deltaV~=0 && deltaX~=0
+                      EgoPolicy2(k) =tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+                  else
+                      EgoPolicy2(k) =0;
+                  end
               end
               end
          else   % as we need to make sure to not to double count the tgt vehicles, for 2 lanes roads if ytempfinal is linear and  tgtLaneY==y_temp_final then there's a chance to overcount the tagt vehicle here, that's h we need this else here   
@@ -188,35 +196,78 @@ for i = 1:1:NUM_CTRL
 
               deltaV=obstacle(k).traj(4,i)-vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
               deltaX=obstacle(k).traj(1,i)-Xi(1);
-              if counter==0%we use a counter to not to add the default value of EgoPolicy2=1 here
+
+%               if counter==0%we use a counter to not to add the default value of EgoPolicy2=1 here
               
                   if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
-                  EgoPolicy2 =1.1*deltaV/deltaX;
-                  elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
-                  EgoPolicy2 =0;  
-                  elseif deltaX<0
-                  EgoPolicy2 =deltaV/deltaX;  
+                     if deltaX<closest_front_car_dist
+                      closest_front_car_dist=deltaX;
+                      front_index=k;
+                     end
+                  if   deltaV~=0 && deltaX~=0
+                      EgoPolicy2(k) =1.1*tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+                  else
+                      EgoPolicy2(k) =0;
                   end
-                  counter=counter+1;
-              else
-              if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
-                  EgoPolicy2 =EgoPolicy2+1.1*deltaV/deltaX;
-              elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
-                  EgoPolicy2 =EgoPolicy2+0;  
-              elseif deltaX<0
-                  EgoPolicy2 =EgoPolicy2+deltaV/deltaX;  
-              end
-              end
+                  elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
+                  EgoPolicy2(k) =0;  
+                  elseif deltaX<0
+                      if abs(deltaX)<closest_back_car_dist
+                      closest_back_car_dist=abs(deltaX);
+                      back_index=k;
+                     end
+                  if   deltaV~=0 && deltaX~=0
+                      EgoPolicy2(k) =tanh((deltaV/deltaX)*abs(deltaX/deltaV)); 
+                  else
+                      EgoPolicy2(k) =0;
+                  end
+                  end
+%                   counter=counter+1;
+%               else
+%               if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
+%                   EgoPolicy2 =EgoPolicy2+1.1*tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+%               elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
+%                   EgoPolicy2 =EgoPolicy2+0;  
+%               elseif deltaX<0
+%                   EgoPolicy2 =EgoPolicy2+tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+%               end
+%               end
           end    
           end
            end 
 %          end
            end
         end
+        if index~=-1 && front_index~=1.5
+        if abs(obstacle(index).traj(1,i)-Xi(1))<abs(obstacle(front_index).traj(1,i)-Xi(1))
+        ccie=1;
+        end
+        end
         
-        mk=(EgoPolicy2+abs(EgoPolicy2))/(2);
+       if i<5% as we don't want an early dciion making. for example short term prediction part can see the next 4s upfront and if we  
+        %this part is addd to only account for closest front and back cars in calculating EgoPolicy2tot for the first and last road lanes  
+              %ccie*EgoPolicy2(index)
+              
+       if index~=-1
+              if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
+              EgoPolicy2tot=EgoPolicy2(back_index)-0.5*ccie*EgoPolicy2(index)+EgoPolicy2(front_index);
+              elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
+              EgoPolicy2tot=EgoPolicy2(back_index)-0.5*ccie*EgoPolicy2(index);
+              elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
+              EgoPolicy2tot=EgoPolicy2(front_index)-0.5*ccie*EgoPolicy2(index);
+              end
+       else
+              if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
+              EgoPolicy2tot=EgoPolicy2(back_index)+EgoPolicy2(front_index);
+              elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
+              EgoPolicy2tot=EgoPolicy2(back_index);
+              elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
+              EgoPolicy2tot=EgoPolicy2(front_index);
+              end
+       end
+        mk=(EgoPolicy2tot+abs(EgoPolicy2tot))/(2);
         EgoPolicy=mk*EgoPolicy1;
-   
+       end
 
 %          [dx_wei,index]=min(dx_wei_tags);% addaptive weight func modified by Omid
 %         ggg=round(Xi(2));
@@ -228,17 +279,20 @@ for i = 1:1:NUM_CTRL
 %          disp(index);
 %         end
 
-         if index==-1
-          Phase=2;
-%           disp(Phase);
+         % phase determination
+         if index==-1 && mk>0% if mk=0 it means egopolicy2<0 meaning frst or last lane is not clear and safe  
+         Phase=2;
+         else
+         Phase=1;
+         end
+
+         if index==-1 
          dx_1=Imag_targetCar_dis;
          dx_2=abs(Xi(2)-Xi(2));
          vref=floor(vref_road+abs((vref_road+0.1-vref_road)*tanh(0.05*dx_1+0.2*dx_2)));
          B=dx_1+vref_road-0.6*vref-2*param.len;
          C=dx_1+vref_road-vref-10*param.len;
          else
-             Phase=1;
-%              disp(Phase);
              dx_1=obstacle(index).traj(1,i)-Xi(1);%dx_1=deltax(1) tp remove the influnce of back cars on ego vehicle speed we don't use abs distance value here 
              dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
 
