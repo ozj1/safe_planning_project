@@ -51,7 +51,7 @@ global T_horizon
 global dt           
 global t_switch
 
-T = 30;             ... total job length%Omid it was 20 previously
+T = 15;             ... total job length%Omid it was 20 previously
 T_horizon = 4;      ... sliding horizon length
 dt = 0.1;           ... discretization time
 t_switch = 0.5;     ... 
@@ -105,7 +105,7 @@ scenario_ref='Linear';%'LaneChange';
 %vehicle objects
 egoV=vehicle;
 vehicle_type='Ego';%to make sure global variables of y_final and y_temp_final will update only for case of Ego vehicle 
-Phase=1;EgoPolicy=0.;%
+Phase=1;EgoPolicy=0.;%the initial ref traj policy mackers 
 %specfing th final destintion of go vehicle
 y_init=ego_initial_y;
         if (y_init == -Lane_size)
@@ -123,13 +123,13 @@ y_init=ego_initial_y;
         end
 tf=1;%seconds needed to do the lane change 
 ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
-top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref);
-side_lane   = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref);
-left_road   = reftraj_gen(2*T, dt, road_up_lim,20, 'Linear', aref, vref);
-right_road  = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref);
-left_road_half   = reftraj_gen(2*T, dt, road_up_lim/2,20, 'Linear', aref, vref);
-right_road_half  = reftraj_gen(2*T, dt, road_low_lim/2,20, 'Linear', aref, vref);
-mid_road    = reftraj_gen(2*T, dt,  0,20, 'Linear', aref, vref);
+top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref,tf,0);
+side_lane   = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref,tf,0);
+left_road   = reftraj_gen(2*T, dt, road_up_lim,20, 'Linear', aref, vref,tf,0);
+right_road  = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref,tf,0);
+left_road_half   = reftraj_gen(2*T, dt, road_up_lim/2,20, 'Linear', aref, vref,tf,0);
+right_road_half  = reftraj_gen(2*T, dt, road_low_lim/2,20, 'Linear', aref, vref,tf,0);
+mid_road    = reftraj_gen(2*T, dt,  0,20, 'Linear', aref, vref,tf,0);
 
 % ref_traj    = reftraj_gen(2*T, dt, 3, 'Linear', aref, vref);%it must be 3 for D1 and -3 for others 
 % top_lane    = reftraj_gen(2*T, dt,  3, 'Linear', aref, vref);
@@ -233,7 +233,7 @@ for i = 1:1:NUM_TOTAL
         scenario_ref='Linear';
          end
          ref_traj = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-        ref_traj_fractions((i-1):2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
+        ref_traj_fractions((i-1):1.5*NUM_TOTAL,:)=ref_traj(1:1.5*NUM_TOTAL-(i-2),:);
 
     elseif Phase==2
     if strcmp(scenario_ref,'Linear')
@@ -251,7 +251,7 @@ for i = 1:1:NUM_TOTAL
 %         end
 %     traj_count=traj_count+1;
         ref_traj   = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-        ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(1:2*NUM_TOTAL-(i-2),:);
+        ref_traj_fractions((i-1):1.5*NUM_TOTAL,:)=ref_traj(1:1.5*NUM_TOTAL-(i-2),:);
     end
     
        
@@ -442,7 +442,6 @@ y = zeros(numberOfFrames, 5);
 % obstacle coordinates
 x_obs = zeros(numberOfFrames + 1, 5, length(OBS));
 y_obs = zeros(numberOfFrames + 1, 5, length(OBS));
-
 for i = 1 : numberOfFrames
 %     x(i,:) = inflated_car_state(1,:,i);
 %     y(i,:) = inflated_car_state(2,:,i);
@@ -488,12 +487,14 @@ end
 car_vert = [reshape(x(:,1:4), 1,4,[]); reshape(y(:,1:4), 1,4,[])];
 %% GIF
 plot_gif = 1;
+pOBS = zeros(5, length(OBS));
 
 
 if plot_gif == 1
     figure()
     delay = 0.1;
     for i = 1 : numberOfFrames
+%         P1=0;P2=0;P3=0;P4=0;P5=0;P6=0;
         % draw car
         r = plot(x(i,:),y(i,:),'k');
         hold on
@@ -507,6 +508,33 @@ if plot_gif == 1
         for j = 1:length(OBS)
             obs_rec(j) = plot(x_obs(i,:,j), y_obs(i,:,j),'m','LineWidth', 1);
             hold on
+            if i<NUM_TOTAL
+            if ((cut_in_traj(2,i,j)==(road_up_lim-Lane_size/2.))) 
+
+            pOBS(1,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)+10, '\DeltaV=' );
+            hold on
+            pOBS(2,j)=text(cut_in_traj(1,i,j)+3,cut_in_traj(2,i,j)+10, num2str(cut_in_traj(4,i,j)-vref_road) );
+            hold on
+            pOBS(3,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)+8, '\DeltaX(1)=' );
+            hold on
+            pOBS(4,j)=text(cut_in_traj(1,i,j)+5,cut_in_traj(2,i,j)+8, num2str(cut_in_traj(1,i,j)-X_planned(1,i),4) );
+            hold on
+            pOBS(5,j)=text(cut_in_traj(1,i,j)-2,cut_in_traj(2,i,j)+5, '\downarrow' );
+            hold on
+            else
+            pOBS(1,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)-10, '\DeltaV=' );
+            hold on
+            pOBS(2,j)=text(cut_in_traj(1,i,j)+3,cut_in_traj(2,i,j)-10, num2str(cut_in_traj(4,i,j)-vref_road) );
+            hold on
+            pOBS(3,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)-8, '\DeltaX(1)=' );
+            hold on
+            pOBS(4,j)=text(cut_in_traj(1,i,j)+5,cut_in_traj(2,i,j)-8, num2str(cut_in_traj(1,i,j)-X_planned(1,i),4) );
+            hold on
+            pOBS(5,j)=text(cut_in_traj(1,i,j)-2,cut_in_traj(2,i,j)-5, '\uparrow' );
+            hold on
+            end
+            end
+            
         end
         if length(OBS)==0
             obs_rec=0;
@@ -552,7 +580,7 @@ if plot_gif == 1
     %         lp = plot(obs_long(1,:,i), obs_long(2,:,i), 'c*');
         end
 
-        xlim([0 350]); ylim([(road_low_lim-2) (road_up_lim+2)]);
+        xlim([0 (NUM_TOTAL+50)]); ylim([(road_low_lim-15) (road_up_lim+15)]);
         xlabel('x(m)', 'FontSize', 25); ylabel('y(m)', 'FontSize', 25);
     %     legend('vehicle','planned','ref','obstacle','planning horizon','Location','best');
 
@@ -576,7 +604,13 @@ if plot_gif == 1
               imwrite(imind,cm,'test.gif','gif','WriteMode','append', 'DelayTime', delay);
           end
 
-        delete(p)
+        delete(p);
+        
+        for j = 1:length(OBS)
+            if i<NUM_TOTAL
+            delete(pOBS(1,j));delete(pOBS(2,j));delete(pOBS(3,j));delete(pOBS(4,j));delete(pOBS(5,j));
+            end
+        end
     %     delete(o)
         delete(r)
         if length(OBS)~=0
@@ -598,7 +632,7 @@ figure()
 subplot(3, 1, 1);
 interval = 10;
 i0 = 1;
-it = 200;
+it = NUM_TOTAL;
 % environment visualizations
 plot(side_lane(:,1),side_lane(:,2)+6,'--r');  
 hold on
@@ -649,7 +683,7 @@ for k = 1:length(OBS)
 end
 
 axis equal
-xlim([0 200]); % B2
+xlim([0 NUM_TOTAL]); % B2
 ylim([-8 8]);
 % % set plot position
 % x0 = 0;
@@ -673,7 +707,7 @@ ylim([-1 18])
 yyaxis right
 plot(X_planned(3,:), 'LineWidth', 2);
 ylabel('Acceleration (m/s^2)', 'FontSize', 25);
-xlim([0 200]);
+xlim([0 NUM_TOTAL]);
 ylim([-5 10])
 grid on
 legend('target velocity', 'ego velocity', 'ego acceleration', 'FontSize',25, 'Location', 'northwest');
@@ -689,7 +723,7 @@ ylim([-5 10])
 yyaxis right
 plot(U_planned(1,:), 'LineWidth', 2);
 ylabel('Jerk (m/s^3)', 'FontSize', 25);
-xlim([0 200]);
+xlim([0 NUM_TOTAL]);
 ylim([-3 3])
 grid on
 legend('ego acceleration', 'ego jerk', 'FontSize',25, 'Location', 'northwest');
