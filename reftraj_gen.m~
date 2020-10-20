@@ -31,7 +31,7 @@ function ref = reftraj_gen(T_tot, dt, vehicleY,x_init, varargin)
     % required for weight calculation in DYNCST 
     global y_final y_temp_final y_temp_init traj_count
     % for obstacle overtaking until the road is clear 
-    global EgoPolicy Phase road_up_lim road_low_lim
+    global EgoPolicy Phase road_up_lim
     % setup default fields
     optargs = {'Linear' '' '' '3' '20' 'Road_lane'};%Omid: I changed {'Linear' '' '3' '20'} to {'Linear' '' '3' '0'}
 
@@ -94,8 +94,8 @@ vehicle_type=cell2mat(optargs(6));
         end
     end
        if strcmp(vehicle_type,'obs')
-       y_temp_init=road_low_lim+Lane_size/2.;
-       y_temp_final=road_up_lim-Lane_size/2.;
+       y_temp_init=road_low_lim;
+       y_temp_final=road_up_lim-;
        end
 
              
