@@ -51,7 +51,7 @@ global T_horizon
 global dt           
 global t_switch
 
-T = 20;             ... total job length%Omid it was 20 previously
+T = 30;             ... total job length%Omid it was 20 previously
 T_horizon = 4;      ... sliding horizon length
 dt = 0.1;           ... discretization time
 t_switch = 0.5;     ... 
@@ -113,7 +113,7 @@ y_init=ego_initial_y;
         elseif (y_init == Lane_size)
             y_final = Lane_size;
         elseif (y_init == Lane_size/2.)
-            y_final = -Lane_size/2.;
+            y_final = Lane_size/2.;
         elseif (y_init == -Lane_size/2.)
             y_final = Lane_size/2.;
         elseif (y_init == -3*Lane_size/2.)
@@ -167,7 +167,7 @@ U0(2,:) = 0.00 * ones(1, NUM_CTRL);     ... initial steering sequence
 %           to the next lane with target vehicles front and behind 
 %   O1--one front target vehicle (v=8m/s) to follow and lane changing 
 %           to the next lane with target vehicles behind (10m/s) go vehicle 15m/s
-scenario = 'Od8';
+scenario = 'D1';
 [OBS, cut_in_traj] = scenario_generation(scenario);
 tgt_reach_traj = cut_in_traj;... this is used by reachability analysis
 
@@ -214,6 +214,8 @@ loop_time   = [];
 
 % iLQR
 for i = 1:1:NUM_TOTAL
+    
+
     
     %we have a two phases planner: phase 1 for  for obstacle overtaking until the road is clear then phase 2 for going to the desired destination if we're not on it already 
     % ref generation for obstacle overtaking until the road is clear 

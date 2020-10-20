@@ -297,7 +297,7 @@ for i = 1:1:NUM_CTRL
              dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
 
             %         if y_temp_final ~= y_final
-            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.05*dx_1+0.2*dx_2)));
+            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.05*dx_1+0.2*dx_2)));%
             %vref=15.;
             %10 6 2020 if tgt was faster than vref_road then it is important to diminish the vlocoty of vref to vref_road
             B=dx_1+obstacle(index).traj(4,i)-0.6*vref-2*param.len;
@@ -313,6 +313,11 @@ for i = 1:1:NUM_CTRL
 %         elseif y_temp_final == y_final
 %             vref=vref_road;
 %         end
+%         if y_temp_final<0 && y_temp_final>-1
+%             disp('jhj')
+%         end
+
+
         y_temp=y_temp_final;
         dy_f=abs(y_temp_final-Xi(2));%deltay_final
 %         dy_f=abs(y_final-Xi(2));%deltay_final

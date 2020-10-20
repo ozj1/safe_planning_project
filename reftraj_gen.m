@@ -62,7 +62,7 @@ vehicle_type=cell2mat(optargs(6));
         if strcmp(vehicle_type,'Ego')
 %          egoV.y_final=y_ref(1);
 %           y_temp_final = egoV.y_final;
-         y_temp_final = y_ref(1);
+         y_temp_final = CenterLaneY_detector(y_ref(1));%bug linear traj should be on center on the lanes not in continuation of egoY value 
          end
     % Lane Changing trajectory
     elseif strcmp(type,'LaneChange')
