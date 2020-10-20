@@ -322,8 +322,8 @@ for i = 1:1:NUM_CTRL
         E=dx_2-dy_t;
         mean_acc=0;sigma_acc=3;mean_jerk=0;sigma_jerk=0.1;
         V=(abs(B)+B)/2.;W=(abs(C)+C)/2.;S=(abs(E)+E)/2.;
-        D=abs(Xi(4)-vref)+abs(-log(1.00673-exp(-0.01*(W+S))));
-        F=abs(Xi(4)-vref)+abs(Xi(3)-aref)+abs(-log(1.00673-exp(-0.01*(W+S))));
+        D=abs(Xi(4)-vref)+abs(-log(1.-exp(-0.01*((10^-0)+W))));
+        F=abs(Xi(4)-vref)+abs(Xi(3)-aref)+abs(-log(1.-exp(-0.01*((10^-0)+W))));
         sss=(1+2*tanh(0.2*(dy_f+dx_2+V)));
         sss=(-log(1.00004-exp(-0.01*dy_t)));
         sss=1.057^(30*tanh(0.09*V));
@@ -332,11 +332,14 @@ for i = 1:1:NUM_CTRL
         const1=-1.*atan(-30);%acotd( X )
 %         const1=2*acotd(-30);
 %abs(const1+1.*atan(100*EgoPolicy))*
-        w_ref(i)=(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00004-exp(-0.01*dy_t)))*1.057^(30*tanh(0.09*V));
-        w_vel(i)=(0.1+5*tanh(0.1*W+0.24*S))*(-log(1.00673-exp(-0.01*dy_t)));
-        w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00673-exp(-0.01*dy_t)));
-        w_del(i)=(2+5*tanh(0.1*W+0.24*S))*(-log(1.00453-exp(-0.01*dy_t)));
-        w_jerk(i)=0.05+1.25331414*(1/(sigma_jerk*(2*pi)^0.5))*(exp(-((F-mean_jerk)^2)/(2*sigma_jerk^2)));
+         w_ref(i)=(-log(1.-exp(-0.01*((10^-3)+dy_t))))*1.057^(30*tanh(0.09*V));
+%          w_ref(i)=(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00004-exp(-0.01*dy_t)))*1.057^(30*tanh(0.09*V));
+         w_vel(i)=(0.1+5*tanh(0.1*W))*(-log(1.-exp(-0.01*((10^-0)+dy_t))));
+%          w_vel(i)=(0.1+5*tanh(0.1*W+0.24*S))*(-log(1.00673-exp(-0.01*dy_t)));
+         w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*(-log(1.-exp(-0.01*((10^-0)+dy_t))));
+%          w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00673-exp(-0.01*dy_t)));
+         w_del(i)=(2+5*tanh(0.1*W))*(-log(1.-exp(-0.01*((10^-1)+dy_t))));
+         w_jerk(i)=0.05+2.5*(1/(sigma_jerk*(2*pi)^0.5))*(exp(-((F-mean_jerk)^2)/(2*sigma_jerk^2)));
 %        w_ref(i)=1;
 %         w_vel(i)=1;
 %         w_acc(i)=1;

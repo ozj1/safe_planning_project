@@ -498,7 +498,7 @@ function [obs, cut_in_traj] = scenario_generation(Case_Code)
         o6      = obstacle(o6_init(1:2), o6_vert, o6_init(3), o6_init(4), o6_init(5), NUM_CTRL, dt, t_switch);
         o6      = o6.update_traj(false);
         
-        obs = [o1,o2,o3,o4];
+        obs = [o1,o2,o3,o4];%
         
         % build a full target trajectory
 %         for mm=1:size(obs)

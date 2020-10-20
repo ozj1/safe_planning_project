@@ -177,13 +177,13 @@ q2_stop = 1;
 % q2_CenterLane=10;
 
 %% Od2 overtakes and avoid 
-% w_jerk   =10;
-% w_acc       = 10;
-% w_del       = 30;
+w_jerk   =0.05* ones(NUM_CTRL,1);
+w_acc       = 10* ones(NUM_CTRL,1);
+w_del       = 30* ones(NUM_CTRL,1);
 % w_ref       = 10;... 3
 % w_vel       = 0.1;
-% w_ref = 20.* ones(NUM_CTRL,1);
-% w_vel = 0.1* ones(NUM_CTRL,1);
+w_ref = 20.* ones(NUM_CTRL,1);
+w_vel = 0.1* ones(NUM_CTRL,1);
 q1_jerk=0.05;%10
 q2_jerk=0.05;%10
 q1_acc = 3;%3
