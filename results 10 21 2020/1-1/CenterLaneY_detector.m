@@ -14,9 +14,10 @@ Num_Lanes= (road_up_lim-road_low_lim)/Lane_size;
 
                 CenterLaneY= road_low_lim+(2*i-1)*Lane_size/2;
                 break;
-            elseif road_up_lim<egoY
+            elseif road_up_lim<=egoY
                 CenterLaneY= road_up_lim-Lane_size/2;
-
+            elseif road_low_lim>=egoY
+                CenterLaneY= road_low_lim+Lane_size/2;
             else
                 m=m+1;
             end

@@ -41,13 +41,13 @@ function [obs, cut_in_traj] = scenario_generation(Case_Code)
 
     if strcmp(Case_Code,'D1')
 
-        obs1 = obstacle([5;-3], [], 0,12, 0, NUM_CTRL, dt, t_switch);
+        obs1 = obstacle([5;-Lane_size/2.], [], 0,8, 0, NUM_CTRL, dt, t_switch);
         obs1 = obs1.update_ctrl(zeros(U_DIM, NUM_CTRL));
         % target performing lane change
         % last four inputs: (type, velocity, tf, x0)
 %         ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
 
-        cut_in_traj = (reftraj_gen(T+T_horizon, dt, -3,5, 'LaneChange', 0,8, 3, 5,'obs'))'; 
+        cut_in_traj = (reftraj_gen(T+T_horizon, dt, -Lane_size/2.,5, 'LaneChange', 0,8, 3, 5,'obs'))'; 
         obs1 = obs1.load_traj(cut_in_traj(:,1:1+NUM_CTRL), [], false);
         % compile into an obstacle 
         obs = [obs1];
@@ -697,6 +697,50 @@ function [obs, cut_in_traj] = scenario_generation(Case_Code)
 %             cut_in_traj(2,i,2) = cut_in_traj(2,i-1,2) + sin(cut_in_traj(4,i-1,2)) * cut_in_traj(3,i-1,2) * dt;
         end
        end
+       
+        elseif strcmp(Case_Code,'S1-1')%for two lane change tests
+        obs1 = obstacle([-20;Lane_size/2.], [], 0,30, 0, NUM_CTRL, dt, t_switch);
+        obs1 = obs1.update_ctrl(zeros(U_DIM, NUM_CTRL));
+        % target performing lane change
+        % last four inputs: (type, velocity, tf, x0)
+%         ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
+
+        cut_in_traj = (reftraj_gen(T+T_horizon, dt, Lane_size/2.,5, 'Linear', 0,30, 3, -20,'obsAdv'))'; 
+        obs1 = obs1.load_traj(cut_in_traj(:,1:1+NUM_CTRL), [], false);
+        % compile into an obstacle 
+        obs = [obs1];
+        
+    elseif strcmp(Case_Code,'S1-2')%for two lane change tests
+        
+        %-------------------
+        obs1 = obstacle([200;Lane_size/2.], [], 0,0, 0, NUM_CTRL, dt, t_switch);
+        obs1 = obs1.update_ctrl(zeros(U_DIM, NUM_CTRL));
+        % target performing lane change
+        % last four inputs: (type, velocity, tf, x0)
+%         ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
+
+        cut_in_traj(:,:,1) = (reftraj_gen(T+T_horizon, dt, Lane_size/2.,5, 'Linear', 0,0, 3, 200,'obsCons'))'; 
+        obs1 = obs1.load_traj(cut_in_traj(:,1:1+NUM_CTRL), [], false);
+        %-------------------
+        obs2 = obstacle([200;-Lane_size/2.], [], 0,0, 0, NUM_CTRL, dt, t_switch);
+        obs2 = obs2.update_ctrl(zeros(U_DIM, NUM_CTRL));
+        % target performing lane change
+        % last four inputs: (type, velocity, tf, x0)
+%         ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
+
+        cut_in_traj(:,:,2) = (reftraj_gen(T+T_horizon, dt, -Lane_size/2.,5, 'Linear', 0,0, 3, 200,'obsCons'))'; 
+        obs2 = obs2.load_traj(cut_in_traj(:,1:1+NUM_CTRL), [], false);
+        %-----------------
+%         obs3 = obstacle([-20;Lane_size/2.], [], 0,30, 0, NUM_CTRL, dt, t_switch);
+%         obs3 = obs3.update_ctrl(zeros(U_DIM, NUM_CTRL));
+%         % target performing lane change
+%         % last four inputs: (type, velocity, tf, x0)
+% %         ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
+% 
+%         cut_in_traj(:,:,3) = (reftraj_gen(T+T_horizon, dt, Lane_size/2.,5, 'Linear', 0,30, 3, -20,'obsAdv'))'; 
+%         obs3 = obs3.load_traj(cut_in_traj(:,1:1+NUM_CTRL), [], false);
+        % compile into an obstacle 
+        obs = [obs1, obs2];
     elseif strcmp(Case_Code,'S1')
         obs = [];
         cut_in_traj = [];

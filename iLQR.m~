@@ -51,7 +51,7 @@ global T_horizon
 global dt           
 global t_switch
 
-T = 20;             ... total job length%Omid it was 20 previously
+T = 30;             ... total job length%Omid it was 20 previously
 T_horizon = 4;      ... sliding horizon length
 dt = 0.1;           ... discretization time
 t_switch = 0.5;     ... 
@@ -113,7 +113,7 @@ y_init=ego_initial_y;
         elseif (y_init == Lane_size)
             y_final = Lane_size;
         elseif (y_init == Lane_size/2.)
-            y_final = -Lane_size/2.;
+            y_final = Lane_size/2.;
         elseif (y_init == -Lane_size/2.)
             y_final = Lane_size/2.;
         elseif (y_init == -3*Lane_size/2.)
@@ -123,13 +123,13 @@ y_init=ego_initial_y;
         end
 tf=1;%seconds needed to do the lane change 
 ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
-top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref,tf,0);
-side_lane   = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref,tf,0);
-left_road   = reftraj_gen(2*T, dt, road_up_lim,20, 'Linear', aref, vref,tf,0);
-right_road  = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref,tf,0);
-left_road_half   = reftraj_gen(2*T, dt, road_up_lim/2,20, 'Linear', aref, vref,tf,0);
-right_road_half  = reftraj_gen(2*T, dt, road_low_lim/2,20, 'Linear', aref, vref,tf,0);
-mid_road    = reftraj_gen(2*T, dt,  0,20, 'Linear', aref, vref,tf,0);
+top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref,tf,0, 'road_line');
+side_lane   = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref,tf,0,'road_line');
+left_road   = reftraj_gen(2*T, dt, road_up_lim,20, 'Linear', aref, vref,tf,0,'road_line');
+right_road  = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref,tf,0,'road_line');
+left_road_half   = reftraj_gen(2*T, dt, road_up_lim/2,20, 'Linear', aref, vref,tf,0,'road_line');
+right_road_half  = reftraj_gen(2*T, dt, road_low_lim/2,20, 'Linear', aref, vref,tf,0,'road_line');
+mid_road    = reftraj_gen(2*T, dt,  0,20, 'Linear', aref, vref,tf,0,'road_line');
 
 % ref_traj    = reftraj_gen(2*T, dt, 3, 'Linear', aref, vref);%it must be 3 for D1 and -3 for others 
 % top_lane    = reftraj_gen(2*T, dt,  3, 'Linear', aref, vref);
@@ -167,7 +167,7 @@ U0(2,:) = 0.00 * ones(1, NUM_CTRL);     ... initial steering sequence
 %           to the next lane with target vehicles front and behind 
 %   O1--one front target vehicle (v=8m/s) to follow and lane changing 
 %           to the next lane with target vehicles behind (10m/s) go vehicle 15m/s
-scenario = 'Od8';
+scenario = 'S1-2';
 [OBS, cut_in_traj] = scenario_generation(scenario);
 tgt_reach_traj = cut_in_traj;... this is used by reachability analysis
 
@@ -215,9 +215,13 @@ loop_time   = [];
 % iLQR
 for i = 1:1:NUM_TOTAL
     
+
+    
     %we have a two phases planner: phase 1 for  for obstacle overtaking until the road is clear then phase 2 for going to the desired destination if we're not on it already 
     % ref generation for obstacle overtaking until the road is clear 
     if i>NUM_CTRL/5 && i<NUM_TOTAL-NUM_CTRL/5
+    if length(ref_traj)-1 ~= 0
+        disp(length(ref_traj))
     traj_dy_dist = zeros(NUM_CTRL/5,1);
            sum_traj_dy_dist=0;
             for jj = i-NUM_CTRL/5:1:i-1
@@ -232,8 +236,8 @@ for i = 1:1:NUM_TOTAL
          else
         scenario_ref='Linear';
          end
-         ref_traj = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-        ref_traj_fractions((i-1):1.5*NUM_TOTAL,:)=ref_traj(1:1.5*NUM_TOTAL-(i-2),:);
+        ref_traj = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+%         ref_traj_fractions((i-1):1.2*NUM_TOTAL,:)=ref_traj(1:1.2*NUM_TOTAL-(i-2),:);
 
     elseif Phase==2
     if strcmp(scenario_ref,'Linear')
@@ -251,21 +255,21 @@ for i = 1:1:NUM_TOTAL
 %         end
 %     traj_count=traj_count+1;
         ref_traj   = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-        ref_traj_fractions((i-1):1.5*NUM_TOTAL,:)=ref_traj(1:1.5*NUM_TOTAL-(i-2),:);
+%         ref_traj_fractions((i-1):1.2*NUM_TOTAL,:)=ref_traj(1:1.2*NUM_TOTAL-(i-2),:);
     end
     
        
     
         end
             end
-%     if ref_traj(1,4) ~= vref% here we want to update ref traj if reftraj(4)~= updated vref which may be equal to target velocity if we want to do lane keeping once we are in tmpoary destinations 
-% %              disp(ref_traj(1,4))
-%         %vref i constantly updating in DYNCST
-%              ref_traj    = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
-%              ref_traj_fractions(i-1:2*NUM_TOTAL,:)=ref_traj(i-1:2*NUM_TOTAL,:);
+    if ref_traj(1,4) ~= vref% here we want to update ref traj if reftraj(4)~= updated vref which may be equal to target velocity if we want to do lane keeping once we are in tmpoary destinations 
 %              disp(ref_traj(1,4))
-% 
-%     end
+        %vref i constantly updating in DYNCST
+             ref_traj = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+%              ref_traj_fractions((i-1):1.2*NUM_TOTAL,:)=ref_traj(1:1.2*NUM_TOTAL-(i-2),:);
+
+    end
+    end
     end
      
     
@@ -391,15 +395,16 @@ for i = 1:1:NUM_TOTAL
     
     % update the obstacle
     for j = 1:length(OBS)
-        if (strcmp(scenario, 'D1') || strcmp(scenario, 'B2'))
+        if (strcmp(scenario, 'D1') || strcmp(scenario, 'B2') || strcmp(scenario, 'S1-1') || strcmp(scenario, 'S1-2'))
             obs_traj(:,i,j) = OBS(j).traj(:,1);
             % trajectory loading update
-            OBS(j) = OBS(j).load_traj(cut_in_traj(:,i:i+NUM_CTRL), [], false);
+            OBS(j) = OBS(j).load_traj(cut_in_traj(:,i:i+NUM_CTRL,j), [], false);
             
         else
             % sliding window update based on control
             obs_traj(:,i,j) = OBS(j).traj(:,1);
-            OBS(j) = OBS(j).next_window(zeros(U_DIM, NUM_CTRL), false, []);
+%             OBS(j) = OBS(j).load_traj(cut_in_traj(:,i:i+NUM_CTRL), [], false);
+            OBS(j) = OBS(j).next_window(zeros(U_DIM, NUM_CTRL), false,[]);% using only this will not update the ref traj for obstacles  
             
         end
     end
@@ -488,8 +493,11 @@ car_vert = [reshape(x(:,1:4), 1,4,[]); reshape(y(:,1:4), 1,4,[])];
 %% GIF
 plot_gif = 1;
 pOBS = zeros(5, length(OBS));
+% % [img, map, alphachannel] = imread('egoV.png');
+% % image(img, 'alphadata', alphachannel);
+% [egoimage, map, egoimage_alpha]  = imread('egoV.png');
 
-
+% egoimage = imresize(egoimage, 0.1);
 if plot_gif == 1
     figure()
     delay = 0.1;
@@ -499,36 +507,39 @@ if plot_gif == 1
         r = plot(x(i,:),y(i,:),'k');
         hold on
         % draw planned trajectory and the reference trajectory
+        
         plot(X_planned(1,:), X_planned(2,:),'b');
         hold on
-         plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'--g');  
-         hold on
+%         plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'--g');  
+%         hold on
+%         image(egoimage, 'alphadata', egoimage_alpha);
+%         hold on
 
         % draw obstacle
         for j = 1:length(OBS)
             obs_rec(j) = plot(x_obs(i,:,j), y_obs(i,:,j),'m','LineWidth', 1);
             hold on
-            if cut_in_traj(1,i,j)<NUM_TOTAL+50
+            if cut_in_traj(1,i,j)>0 && cut_in_traj(1,i,j)<NUM_TOTAL+50
             if ((cut_in_traj(2,i,j)==(road_up_lim-Lane_size/2.))) 
 
-            pOBS(1,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)+10, '\DeltaV=' );
+            pOBS(1,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)+12, 'V=' );
             hold on
-            pOBS(2,j)=text(cut_in_traj(1,i,j)+3,cut_in_traj(2,i,j)+10, num2str(cut_in_traj(4,i,j)-vref_road) );
+            pOBS(2,j)=text(cut_in_traj(1,i,j)+3,cut_in_traj(2,i,j)+12, num2str(cut_in_traj(4,i,j)) );
             hold on
             pOBS(3,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)+8, '\DeltaX(1)=' );
             hold on
-            pOBS(4,j)=text(cut_in_traj(1,i,j)+5,cut_in_traj(2,i,j)+8, num2str(cut_in_traj(1,i,j)-X_planned(1,i),4) );
+            pOBS(4,j)=text(cut_in_traj(1,i,j)+10,cut_in_traj(2,i,j)+8, num2str(cut_in_traj(1,i,j)-X_planned(1,i),4) );
             hold on
             pOBS(5,j)=text(cut_in_traj(1,i,j)-2,cut_in_traj(2,i,j)+5, '\downarrow' );
             hold on
             else
-            pOBS(1,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)-10, '\DeltaV=' );
+            pOBS(1,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)-12, 'V=' );
             hold on
-            pOBS(2,j)=text(cut_in_traj(1,i,j)+3,cut_in_traj(2,i,j)-10, num2str(cut_in_traj(4,i,j)-vref_road) );
+            pOBS(2,j)=text(cut_in_traj(1,i,j)+3,cut_in_traj(2,i,j)-12, num2str(cut_in_traj(4,i,j)) );
             hold on
             pOBS(3,j)=text(cut_in_traj(1,i,j)-3,cut_in_traj(2,i,j)-8, '\DeltaX(1)=' );
             hold on
-            pOBS(4,j)=text(cut_in_traj(1,i,j)+5,cut_in_traj(2,i,j)-8, num2str(cut_in_traj(1,i,j)-X_planned(1,i),4) );
+            pOBS(4,j)=text(cut_in_traj(1,i,j)+10,cut_in_traj(2,i,j)-8, num2str(cut_in_traj(1,i,j)-X_planned(1,i),4) );
             hold on
             pOBS(5,j)=text(cut_in_traj(1,i,j)-2,cut_in_traj(2,i,j)-5, '\uparrow' );
             hold on
@@ -607,7 +618,7 @@ if plot_gif == 1
         delete(p);
         
         for j = 1:length(OBS)
-            if cut_in_traj(1,i,j)<NUM_TOTAL+50
+            if cut_in_traj(1,i,j)>0 && cut_in_traj(1,i,j)<NUM_TOTAL+50
             delete(pOBS(1,j));delete(pOBS(2,j));delete(pOBS(3,j));delete(pOBS(4,j));delete(pOBS(5,j));
             end
         end
@@ -636,8 +647,8 @@ it = NUM_TOTAL;
 % environment visualizations
 plot(side_lane(:,1),side_lane(:,2)+6,'--r');  
 hold on
-plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'-.k');  
-hold on
+% plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'-.k');  
+% hold on
 plot(side_lane(:,1),side_lane(:,2),'-.k');  
 hold on
 plot(left_road(:,1),left_road(:,2),'k');  

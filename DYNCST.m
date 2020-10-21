@@ -164,24 +164,34 @@ for i = 1:1:NUM_CTRL
               deltaX=obstacle(k).traj(1,i)-Xi(1);
               % EgoPolicy can be lane changing for EgoPolicy<0
               %finding the index of target vhicle with min distance if it's in the same lane with ego car   
-              
+              trajV=obstacle(k).traj(4,i);
+
+              if trajV==0
+                  trajV=0.01;%by having this if a car is stopped at behind EgoPolicy1(k) will be <0 so will trigger an index and if it's in front EgoPolicy1(k)>0 so it can replace dangerousCar down here so no index=-1 happens incorrectly
+              end
+
               if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
-                  EgoPolicy1(k) =1.1*obstacle(k).traj(4,i)*(deltaV/abs(deltaV))/deltaX;%deltaV/deltaX;
+                  EgoPolicy1(k) =1.1*trajV*(deltaV/abs(deltaV))/deltaX;%deltaV/deltaX;
               elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
                   EgoPolicy1(k) =0;  
               elseif deltaX<0
-                  EgoPolicy1(k) =obstacle(k).traj(4,i)*(deltaV/abs(deltaV))/deltaX;  
+                  EgoPolicy1(k) =trajV*(deltaV/abs(deltaV))/deltaX;  
               end
               EgoPolicy1tot=EgoPolicy1tot+EgoPolicy1(k);
               if abs(EgoPolicy1(k))>abs(dangerousCar)
               dangerousCar=abs(EgoPolicy1(k));
 %               if closest_car>0
               index=k;
-                  if   deltaV~=0 && deltaX~=0
-                      EgoPolicy2(k) =tanh((obstacle(k).traj(4,i)*(deltaV/abs(deltaV))/deltaX));%tanh((deltaV/deltaX)*abs(deltaX/deltaV));
-                  else
-                      EgoPolicy2(k) =0;
-                  end
+                  trajV=obstacle(k).traj(4,i);
+                  if deltaV==0
+                      deltaV=0.01; % just a small number instead of 0  
+                  elseif deltaX==0
+                      deltaX=0.01;
+                  elseif  trajV==0
+                      trajV=0.01;
+                  end 
+                      EgoPolicy2(k) =tanh((trajV*(deltaV/abs(deltaV))/deltaX));%tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+                  
 %               end
               end
          else   % as we need to make sure to not to double count the tgt vehicles, for 2 lanes roads if ytempfinal is linear and  tgtLaneY==y_temp_final then there's a chance to overcount the tagt vehicle here, that's h we need this else here   
@@ -204,11 +214,17 @@ for i = 1:1:NUM_CTRL
                       closest_front_car_dist=deltaX;
                       front_index=k;
                      end
-                  if   deltaV~=0 && deltaX~=0
-                      EgoPolicy2(k) =1.1*tanh((obstacle(k).traj(4,i)*(deltaV/abs(deltaV))/deltaX));
-                  else
-                      EgoPolicy2(k) =0;
-                  end
+                  trajV=obstacle(k).traj(4,i);
+                  if deltaV==0
+                      deltaV=0.01; % just a small number instead of 0  
+                  elseif deltaX==0
+                      deltaX=0.01;
+                  elseif  trajV==0
+                      trajV=0.01;
+                  end 
+                      EgoPolicy2(k) =1.1*tanh((trajV*(deltaV/abs(deltaV))/deltaX));
+                  
+                  
                   elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
                   EgoPolicy2(k) =0;  
                   elseif deltaX<0
@@ -216,11 +232,17 @@ for i = 1:1:NUM_CTRL
                       closest_back_car_dist=abs(deltaX);
                       back_index=k;
                      end
-                  if   deltaV~=0 && deltaX~=0
-                      EgoPolicy2(k) =tanh((obstacle(k).traj(4,i)*(deltaV/abs(deltaV))/deltaX)); 
-                  else
-                      EgoPolicy2(k) =0;
+                  trajV=obstacle(k).traj(4,i);
+                  if deltaV==0
+                      deltaV=0.01; % just a small number instead of 0  
+                  elseif deltaX==0
+                      deltaX=0.01;
+                  elseif  trajV==0
+                      trajV=0.01;
                   end
+                  
+                      EgoPolicy2(k) =tanh((trajV*(deltaV/abs(deltaV))/deltaX)); 
+                  
                   end
 %                   counter=counter+1;
 %               else
@@ -244,7 +266,7 @@ for i = 1:1:NUM_CTRL
         end
         end
         
-       if i<5% as we don't want an early dciion making. for example short term prediction part can see the next 4s upfront and if we  
+       if  i<5% as we don't want an early dciion making. for example short term prediction part can see the next 4s upfront and if we  
         %this part is addd to only account for closest front and back cars in calculating EgoPolicy2tot for the first and last road lanes  
               %ccie*EgoPolicy2(index)
               
@@ -297,7 +319,7 @@ for i = 1:1:NUM_CTRL
              dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
 
             %         if y_temp_final ~= y_final
-            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.05*dx_1+0.2*dx_2)));%
+            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.02*dx_1+0.2*dx_2)));%
             %vref=15.;
             %10 6 2020 if tgt was faster than vref_road then it is important to diminish the vlocoty of vref to vref_road
             B=dx_1+obstacle(index).traj(4,i)-0.6*vref-2*param.len;
@@ -337,6 +359,7 @@ for i = 1:1:NUM_CTRL
         const1=-1.*atan(-30);%acotd( X )
 %         const1=2*acotd(-30);
 %abs(const1+1.*atan(100*EgoPolicy))*
+% if i==1
          w_ref(i)=(-log(1.-exp(-0.01*((10^-3)+dy_t))))*1.057^(30*tanh(0.09*V));
 %          w_ref(i)=(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00004-exp(-0.01*dy_t)))*1.057^(30*tanh(0.09*V));
          w_vel(i)=(0.1+5*tanh(0.1*W))*(-log(1.-exp(-0.01*((10^-0)+dy_t))));
@@ -345,11 +368,15 @@ for i = 1:1:NUM_CTRL
 %          w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00673-exp(-0.01*dy_t)));
          w_del(i)=(2+5*tanh(0.1*W))*(-log(1.-exp(-0.01*((10^-1)+dy_t))));
          w_jerk(i)=0.05+2.5*(1/(sigma_jerk*(2*pi)^0.5))*(exp(-((F-mean_jerk)^2)/(2*sigma_jerk^2)));
-%        w_ref(i)=1;
-%         w_vel(i)=1;
-%         w_acc(i)=1;
-%         w_del(i)=1;
-%         w_jerk(i)=1;
+
+% else
+%          w_ref(i)=w_ref(i-1);
+%         w_vel(i)=w_vel(i-1);
+%         w_acc(i)=w_acc(i-1);
+%         w_del(i)=w_del(i-1);
+%         w_jerk(i)=w_jerk(i-1);
+% end
+
 
 
 %w_ref(i) = 30.*(obstacle(index).traj(4,i)/vref) / a_ref * exp(b_ref * dx_wei);

@@ -28,7 +28,7 @@ v_min=1.;
 global road_up_lim road_low_lim Lane_size
 road_up_lim =3.;
 road_low_lim=-3.;
-Lane_size=6.;
+Lane_size=3.;
 
 %for tailgate
 global min_safe_dis
