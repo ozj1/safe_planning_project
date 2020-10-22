@@ -166,16 +166,20 @@ for i = 1:1:NUM_CTRL
               %finding the index of target vhicle with min distance if it's in the same lane with ego car   
               trajV=obstacle(k).traj(4,i);
 
-              if trajV==0
-                  trajV=0.01;
+              if deltaV==0
+                      deltaV=0.01; % just a small number instead of 0  
+              elseif deltaX==0
+                      deltaX=0.01;
+              elseif trajV==0
+                  trajV=0.01;%by having this if a car is stopped at behind EgoPolicy1(k) will be <0 so will trigger an index and if it's in front EgoPolicy1(k)>0 so it can replace dangerousCar down here so no index=-1 happens incorrectly
               end
 
               if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
-                  EgoPolicy1(k) =1.1*obstacle(k).traj(4,i)*(deltaV/abs(deltaV))/deltaX;%deltaV/deltaX;
+                  EgoPolicy1(k) =1.01*trajV*(deltaV/abs(deltaV))/deltaX;%deltaV/deltaX;
               elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
                   EgoPolicy1(k) =0;  
               elseif deltaX<0
-                  EgoPolicy1(k) =obstacle(k).traj(4,i)*(deltaV/abs(deltaV))/deltaX;  
+                  EgoPolicy1(k) =trajV*(deltaV/abs(deltaV))/deltaX;  
               end
               EgoPolicy1tot=EgoPolicy1tot+EgoPolicy1(k);
               if abs(EgoPolicy1(k))>abs(dangerousCar)
@@ -222,7 +226,7 @@ for i = 1:1:NUM_CTRL
                   elseif  trajV==0
                       trajV=0.01;
                   end 
-                      EgoPolicy2(k) =1.1*tanh((trajV*(deltaV/abs(deltaV))/deltaX));
+                      EgoPolicy2(k) =1.01*tanh((trajV*(deltaV/abs(deltaV))/deltaX));
                   
                   
                   elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
@@ -312,6 +316,7 @@ for i = 1:1:NUM_CTRL
          dx_1=Imag_targetCar_dis;
          dx_2=abs(Xi(2)-Xi(2));
          vref=floor(vref_road+abs((vref_road+0.1-vref_road)*tanh(0.05*dx_1+0.2*dx_2)));
+         
          B=dx_1+vref_road-0.6*vref-2*param.len;
          C=dx_1+vref_road-vref-10*param.len;
          else
@@ -330,7 +335,10 @@ for i = 1:1:NUM_CTRL
 
             if vref>vref_road
                 vref=vref_road;
+            elseif vref<0.2
+                vref=0;
             end
+            
             %             vref=obstacle(index).traj(4,i);
 %         elseif y_temp_final == y_final
 %             vref=vref_road;
