@@ -100,7 +100,7 @@ vref        = 15;
 vref_road=15;
 aref=0.;
 traj_count=0;
-ego_initial_y=Lane_size/2.;
+ego_initial_y=-Lane_size/2.;
 scenario_ref='Linear';%'LaneChange';
 %vehicle objects
 egoV=vehicle;
@@ -116,7 +116,7 @@ y_init=ego_initial_y;
         elseif (y_init == Lane_size/2.)
             y_final = Lane_size/2.;
         elseif (y_init == -Lane_size/2.)
-            y_final = -Lane_size/2.;
+            y_final = Lane_size/2.;
         elseif (y_init == -3*Lane_size/2.)
             y_final = 3*Lane_size/2.;
         elseif (y_init == 3*Lane_size/2.)
@@ -142,7 +142,7 @@ mid_road    = reftraj_gen(2*T, dt,  0,20, 'Linear', aref, vref,tf,0,'road_line')
 % --- initial state ---
 X_start     = zeros(X_DIM, 1);
 X_start(2)  = ego_initial_y;   ... initial y offset of -3m (on the ref trajectory)%it must be 3 for D1 and -3 for others 
-X_start(4)  = 8;   ... initial velocity of 14.0m/sec
+X_start(4)  = 15;   ... initial velocity of 14.0m/sec
 
 % --- goal state ---
 X_goal      = transpose(ref_traj(end,:));
@@ -168,7 +168,7 @@ U0(2,:) = 0.00 * ones(1, NUM_CTRL);     ... initial steering sequence
 %           to the next lane with target vehicles front and behind 
 %   O1--one front target vehicle (v=8m/s) to follow and lane changing 
 %           to the next lane with target vehicles behind (10m/s) go vehicle 15m/s
-scenario = 'S1-3';
+scenario = 'S4-2';
 [OBS, cut_in_traj] = scenario_generation(scenario);
 tgt_reach_traj = cut_in_traj;... this is used by reachability analysis
 
@@ -393,7 +393,7 @@ for i = 1:1:NUM_TOTAL
     
     % update the obstacle
     for j = 1:length(OBS)
-        if (strcmp(scenario, 'D1') || strcmp(scenario, 'B2') || strcmp(scenario, 'S1-1') || strcmp(scenario, 'S1-2') || strcmp(scenario, 'S1-3'))
+        if (strcmp(scenario, 'D1') || strcmp(scenario, 'B2') || strcmp(scenario, 'S1-1') || strcmp(scenario, 'S1-2') || strcmp(scenario, 'S1-3') || strcmp(scenario, 'S2'))
             obs_traj(:,i,j) = OBS(j).traj(:,1);
             % trajectory loading update
             OBS(j) = OBS(j).load_traj(cut_in_traj(:,i:i+NUM_CTRL,j), [], false);
