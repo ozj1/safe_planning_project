@@ -863,7 +863,7 @@ function [obs, cut_in_traj] = scenario_generation(Case_Code)
        end
     elseif strcmp(Case_Code,'S4-2')%for two lane change tests
         % obstacle1
-        o1_init = [-20;Lane_size/2.; 0; 13.6; 0];
+        o1_init = [-35;Lane_size/2.; 0; 13.6; 0];
         o1_vert = inflate(o1_init);
         o1      = obstacle(o1_init(1:2), o1_vert,o1_init(3), o1_init(4), o1_init(5), NUM_CTRL, dt, t_switch);
         o1      = o1.update_traj(false);
