@@ -135,13 +135,17 @@ for i = 1:1:NUM_CTRL
 %            w_vel       = 30.* ones(NUM_CTRL,1);
 %         else
 
-       EgoPolicy1tot=0.;EgoPolicy1=0.* ones(20,1);EgoPolicy2tot=1;EgoPolicy2=1.* ones(20,1);counter=0;%initialization meaning lane keeping by default 
+       PDM1=0.;EgoPolicy1=0.* ones(20,1);PDM2=1;EgoPolicy2=1.* ones(20,1);counter=0;%initialization meaning lane keeping by default 
+       NLUA=0;NLGP=0;VNLB=0.5*vref_road;VNLF=1.5*vref_road;VELB=0.5*vref_road;VELF=1.5*vref_road;%default values
        %EgoPolicy2=1.* ones(20,1); b default for checking 20 cars in the other lane which is more than enough
        % the default value for EgoPolicy2 is 1 which will mk equal to 1 if y_temp_final is not the first or the last lane of the road 
 
        %if there wasn't an car near than distance of 300 from our car, we spcify the index as a requirment for following eqs  
-       ref_dist=10000.;dangerousCar=0.;closest_car=ref_dist; closest_back_car_dist=ref_dist;closest_front_car_dist=ref_dist;%initalization large distance
+       ref_dist=10000.;dangerousCar=0.;closest_car=ref_dist; closest_back_car_dist=-ref_dist;closest_front_car_dist=ref_dist;%initalization large distance
+       backNLposition=-ref_dist; frontNLposition=ref_dist;
+       backELCdist=-ref_dist;frontELCdist=ref_dist;
        ccie=0;%closest_car_in_egolane=0;
+       frontTCV=vref_road;%initial value for front target ca velocity
        index=-1;front_index=1.5;back_index=1.5;%initalization index, we need to evaluate each time the nvironment to find the correct trget vehicle and if there's no car available in our lane index should be NaN 
         for k = 1:length(obstacle)
               EgoLaneY = CenterLaneY_detector(Xi(2));
@@ -160,41 +164,58 @@ for i = 1:1:NUM_CTRL
 %              dx_wei_tags(k)=1000;
 %          end 
           if EgoLaneY==tgtLaneY%In the velocity reference  we only account for the vehicles
-              deltaV=obstacle(k).traj(4,i)-vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
               deltaX=obstacle(k).traj(1,i)-Xi(1);
               % EgoPolicy can be lane changing for EgoPolicy<0
               %finding the index of target vhicle with min distance if it's in the same lane with ego car   
-              trajV=obstacle(k).traj(4,i);
-
-              if deltaV==0
-                      deltaV=0.01; % just a small number instead of 0  
-              elseif deltaX==0
-                      deltaX=0.01;
-              elseif trajV==0
-                  trajV=0.01;%by having this if a car is stopped at behind EgoPolicy1(k) will be <0 so will trigger an index and if it's in front EgoPolicy1(k)>0 so it can replace dangerousCar down here so no index=-1 happens incorrectly
-              end
+%               trajV=obstacle(k).traj(4,i);
+% 
+%               if deltaV==0
+%                       deltaV=0.01; % just a small number instead of 0  
+%               elseif deltaX==0
+%                       deltaX=0.01;
+%               elseif trajV==0
+%                   trajV=0.01;%by having this if a car is stopped at behind EgoPolicy1(k) will be <0 so will trigger an index and if it's in front EgoPolicy1(k)>0 so it can replace dangerousCar down here so no index=-1 happens incorrectly
+%               end
 
               if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
-                  EgoPolicy1(k) =1.01*trajV*(deltaV/abs(deltaV))/deltaX;%deltaV/deltaX;
+
+                  VELF=obstacle(k).traj(4,i);%VELB=ego lane front velocity
+                  deltaV=VELF-0.9*vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
+                  EgoPolicy1(k) =1-exp(-(deltaV));%trajV*(deltaV/abs(deltaV))/deltaX;  
+                  
+                  %EgoPolicy1(k) =1.01*trajV*(deltaV/abs(deltaV))/deltaX;%deltaV/deltaX;
+                  if deltaX<frontELCdist
+                  frontELCdist=deltaX;
+                  frontELC=k;
+                  end
               elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
                   EgoPolicy1(k) =0;  
               elseif deltaX<0
-                  EgoPolicy1(k) =trajV*(deltaV/abs(deltaV))/deltaX;  
+                  
+                  VELB=obstacle(k).traj(4,i);%VELB=ego lane back velocity
+                  deltaV=VELB-vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
+                  EgoPolicy1(k) =1-1/(exp(-(deltaV)));%trajV*(deltaV/abs(deltaV))/deltaX;  
+                  
+                  if deltaX>backELCdist
+                  backELCdist=deltaX;
+                  backELC=k;
+                  end
               end
-              EgoPolicy1tot=EgoPolicy1tot+EgoPolicy1(k);
+              
+              
               if abs(EgoPolicy1(k))>abs(dangerousCar)
               dangerousCar=abs(EgoPolicy1(k));
 %               if closest_car>0
               index=k;
                   mainTCV=obstacle(k).traj(4,i);%mainTCV = main Target Car Velocity
-                  if deltaV==0
-                      deltaV=0.01; % just a small number instead of 0  
-                  elseif deltaX==0
-                      deltaX=0.01;
-                  elseif  mainTCV==0
-                      mainTCV=0.01;
-                  end 
-                      EgoPolicy2(k) =tanh((mainTCV*(deltaV/abs(deltaV))/deltaX));%tanh((deltaV/deltaX)*abs(deltaX/deltaV));
+%                   if deltaV==0
+%                       deltaV=0.01; % just a small number instead of 0  
+%                   elseif deltaX==0
+%                       deltaX=0.01;
+%                   elseif  mainTCV==0
+%                       mainTCV=0.01;
+%                   end 
+%                       EgoPolicy2(k) =tanh((mainTCV*(deltaV/abs(deltaV))/deltaX));%tanh((deltaV/deltaX)*abs(deltaX/deltaV));
                   
 %               end
               end
@@ -208,44 +229,59 @@ for i = 1:1:NUM_CTRL
 %           if abs(abs(tgtLaneY-y_temp_final)-Lane_size) <= 1e-15 || abs(abs(tgtLaneY-y_temp_final)-0) <= 1e-15  
           if ((roundn(abs(tgtLaneY-y_temp_final),2)==roundn(Lane_size,2)) || (roundn(abs(tgtLaneY-y_temp_final),2)==roundn(0,2))) 
 
-              deltaV=obstacle(k).traj(4,i)-vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
               deltaX=obstacle(k).traj(1,i)-Xi(1);
 
 %               if counter==0%we use a counter to not to add the default value of EgoPolicy2=1 here
               
                   if deltaX>0%using the 1.1 coefficient front target vehicles have more influence on egopolicy value than the back vehicles 
-                     if deltaX<closest_front_car_dist
+                     VNLF=obstacle(k).traj(4,i);%VELB=neigboring lane front velocity
+                     deltaV=VNLF-0.9*vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
+                     if deltaV==0
+                      deltaV=0.01; % just a small number instead of 0  
+                     end
+                     EgoPolicy2(k) =tanh(1-exp(-(deltaV)));%trajV*(deltaV/abs(deltaV))/deltaX; 
+                      
+                      
+                      if deltaX<closest_front_car_dist
                       closest_front_car_dist=deltaX;
                       front_index=k;
+                      frontNLposition=obstacle(k).traj(1,i);
+
                      end
-                  trajV=obstacle(k).traj(4,i);
-                  if deltaV==0
-                      deltaV=0.01; % just a small number instead of 0  
-                  elseif deltaX==0
-                      deltaX=0.01;
-                  elseif  trajV==0
-                      trajV=0.01;
-                  end 
-                      EgoPolicy2(k) =1.01*tanh((trajV*(deltaV/abs(deltaV))/deltaX));
+%                   frontTCV=obstacle(k).traj(4,i);% frontTCV front target car velocity 
+%                   elseif deltaX==0
+%                       deltaX=0.01;
+%                   elseif  frontTCV==0
+%                       frontTCV=0.01;
+%                   end 
+%                       EgoPolicy2(k) =1.01*tanh((frontTCV*(deltaV/abs(deltaV))/deltaX));
                   
                   
                   elseif deltaX==0%to prevent infinity values we consider egopolicy2= 0 for deltaX=0
                   EgoPolicy2(k) =0;  
                   elseif deltaX<0
-                      if abs(deltaX)<closest_back_car_dist
-                      closest_back_car_dist=abs(deltaX);
+                       VNLB=obstacle(k).traj(4,i);%VELB=ego lane back velocity
+                       deltaV=VNLB-vref_road;%Vtraffic is either Vref_road or speed of th car with lowest speed
+                      if deltaV==0
+                      deltaV=-0.01; % just a small ngative number instead of 0  
+                      end
+                       EgoPolicy2(k) =tanh(1-1/(exp(-(deltaV))));%trajV*(deltaV/abs(deltaV))/deltaX;  
+                       
+                      if deltaX>closest_back_car_dist
+                      closest_back_car_dist=deltaX;
                       back_index=k;
-                     end
-                  trajV=obstacle(k).traj(4,i);
-                  if deltaV==0
-                      deltaV=0.01; % just a small number instead of 0  
-                  elseif deltaX==0
-                      deltaX=0.01;
-                  elseif  trajV==0
-                      trajV=0.01;
-                  end
-                  
-                      EgoPolicy2(k) =tanh((trajV*(deltaV/abs(deltaV))/deltaX)); 
+                      backNLposition=obstacle(k).traj(1,i);
+                      end
+%                   trajV=obstacle(k).traj(4,i);
+%                   if deltaV==0
+%                       deltaV=0.01; % just a small number instead of 0  
+%                   elseif deltaX==0
+%                       deltaX=0.01;
+%                   elseif  trajV==0
+%                       trajV=0.01;
+%                   end
+%                   
+%                       EgoPolicy2(k) =tanh((trajV*(deltaV/abs(deltaV))/deltaX)); 
                   
                   end
 %                   counter=counter+1;
@@ -264,9 +300,10 @@ for i = 1:1:NUM_CTRL
 %          end
            end
         end
-        if index~=-1 && front_index~=1.5
-        if abs(obstacle(index).traj(1,i)-Xi(1))<abs(obstacle(front_index).traj(1,i)-Xi(1))
-        ccie=2;
+        if index~=-1 %&& back_index~=1.5
+%         if abs(obstacle(index).traj(1,i)-Xi(1))<abs(obstacle(back_index).traj(1,i)-Xi(1))
+        if abs(obstacle(index).traj(1,i)-Xi(1))<4*param.len
+        ccie=1;
         end
         end
         
@@ -274,27 +311,58 @@ for i = 1:1:NUM_CTRL
         %this part is addd to only account for closest front and back cars in calculating EgoPolicy2tot for the first and last road lanes  
               %ccie*EgoPolicy2(index)
               
-       if index~=-1
-              if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
-              EgoPolicy2tot=EgoPolicy2(back_index)-0.5*ccie*EgoPolicy2(index)+EgoPolicy2(front_index);
-              elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
-              EgoPolicy2tot=EgoPolicy2(back_index)-0.5*ccie*EgoPolicy2(index);
-              elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
-              EgoPolicy2tot=EgoPolicy2(front_index)-0.5*ccie*EgoPolicy2(index);
+%        if index~=-1
+%               if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
+%               EgoPolicy2tot=EgoPolicy2(back_index)-0.5*ccie*EgoPolicy2(index)+EgoPolicy2(front_index);
+%               elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
+%               EgoPolicy2tot=EgoPolicy2(back_index)-0.5*ccie*EgoPolicy2(index);
+%               elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
+%               EgoPolicy2tot=EgoPolicy2(front_index)-0.5*ccie*EgoPolicy2(index);
+%               end
+%        else
+
+              if backELCdist>-ref_dist && frontELCdist<ref_dist
+             PDM1=EgoPolicy1(backELC)+EgoPolicy1(frontELC);
+              elseif backELCdist>-ref_dist && roundn(frontELCdist,2)==roundn(ref_dist,2)
+             PDM1=EgoPolicy1(backELC);
+              elseif frontELCdist<ref_dist && roundn(backELCdist,2)==roundn(-ref_dist,2)
+             PDM1=EgoPolicy1(frontELC);
               end
-       else
-              if closest_back_car_dist<ref_dist && closest_front_car_dist<ref_dist
-              EgoPolicy2tot=EgoPolicy2(back_index)+EgoPolicy2(front_index);
-              elseif closest_back_car_dist<ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
-              EgoPolicy2tot=EgoPolicy2(back_index);
-              elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(ref_dist,2)
-              EgoPolicy2tot=EgoPolicy2(front_index);
+
+
+
+              if closest_back_car_dist>-ref_dist && closest_front_car_dist<ref_dist
+              PDM2=EgoPolicy2(back_index)+EgoPolicy2(front_index)-ccie*1.1*tanh(PDM1);
+              elseif closest_back_car_dist>-ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
+              PDM2=EgoPolicy2(back_index)-ccie*1.1*tanh(PDM1);
+              elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(-ref_dist,2)
+              PDM2=EgoPolicy2(front_index)-ccie*1.1*tanh(PDM1);
               end
-       end
-        mk=(EgoPolicy2tot+abs(EgoPolicy2tot))/(2);
-        EgoPolicy=mk*EgoPolicy1tot;
+%        end
+
+        deltaXeb=Xi(1)-backNLposition;
+        deltaXfb=frontNLposition-backNLposition;
+      
+        GDM=(1-exp(-(deltaXeb-1.5*param.len)))+(1-exp(-(deltaXfb-5.*param.len)));
+        
+        NLUA=(PDM2+abs(PDM2))/(2);
+        NLGP=(GDM+abs(GDM))/2.;
+        EgoPolicy=NLGP*NLUA*PDM1;
+%         if EgoPolicy<0
+%             disp('mee');
+%         end
+       % phase determination
+         if NLGP>0 && NLUA>0 && (index==-1 || mainTCV>=vref_road) && VNLF>=0.9*vref_road  % if mk=0 it means egopolicy2<0 meaning frst or last lane is not clear and safe  % && ((Xi(1)-closest_back_car_dist)>1*param.len) && ((closest_front_car_dist-closest_back_car_dist)>8*param.len)
+         % bug having mk>0 && index==-1  instead of will covers more phase  transmission
+         Phase=2;
+         else
+         Phase=1;
+         end
+       
+        
        end
 
+       
 %          [dx_wei,index]=min(dx_wei_tags);% addaptive weight func modified by Omid
 %         ggg=round(Xi(2));
 %         if ggg~=4
@@ -305,13 +373,7 @@ for i = 1:1:NUM_CTRL
 %          disp(index);
 %         end
 
-         % phase determination
-         if mk>0 && (index==-1 || mainTCV>=vref_road) % if mk=0 it means egopolicy2<0 meaning frst or last lane is not clear and safe  
-         % bug having mk>0 && index==-1  instead of will covers more phase  transmission
-         Phase=2;
-         else
-         Phase=1;
-         end
+         
 
          if index==-1 
          dx_1=Imag_targetCar_dis;

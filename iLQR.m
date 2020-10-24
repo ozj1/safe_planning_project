@@ -168,7 +168,7 @@ U0(2,:) = 0.00 * ones(1, NUM_CTRL);     ... initial steering sequence
 %           to the next lane with target vehicles front and behind 
 %   O1--one front target vehicle (v=8m/s) to follow and lane changing 
 %           to the next lane with target vehicles behind (10m/s) go vehicle 15m/s
-scenario = 'S4-2';
+scenario = 'Od5';
 [OBS, cut_in_traj] = scenario_generation(scenario);
 tgt_reach_traj = cut_in_traj;... this is used by reachability analysis
 

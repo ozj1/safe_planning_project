@@ -300,9 +300,10 @@ for i = 1:1:NUM_CTRL
 %          end
            end
         end
-        if index~=-1 && front_index~=1.5
-        if abs(obstacle(index).traj(1,i)-Xi(1))<abs(obstacle(front_index).traj(1,i)-Xi(1))
-        ccie=2;
+        if index~=-1 %&& back_index~=1.5
+%         if abs(obstacle(index).traj(1,i)-Xi(1))<abs(obstacle(back_index).traj(1,i)-Xi(1))
+        if abs(obstacle(index).traj(1,i)-Xi(1))<4*param.len
+        ccie=1;
         end
         end
         
@@ -331,11 +332,11 @@ for i = 1:1:NUM_CTRL
 
 
               if closest_back_car_dist>-ref_dist && closest_front_car_dist<ref_dist
-              PDM2=EgoPolicy2(back_index)+EgoPolicy2(front_index);
+              PDM2=EgoPolicy2(back_index)+EgoPolicy2(front_index)-ccie*1.1*tanh(PDM1);
               elseif closest_back_car_dist>-ref_dist && roundn(closest_front_car_dist,2)==roundn(ref_dist,2)
-              PDM2=EgoPolicy2(back_index);
+              PDM2=EgoPolicy2(back_index)-ccie*1.1*tanh(PDM1);
               elseif closest_front_car_dist<ref_dist && roundn(closest_back_car_dist,2)==roundn(-ref_dist,2)
-              PDM2=EgoPolicy2(front_index);
+              PDM2=EgoPolicy2(front_index)-ccie*1.1*tanh(PDM1);
               end
 %        end
 
@@ -343,12 +344,13 @@ for i = 1:1:NUM_CTRL
         deltaXfb=frontNLposition-backNLposition;
       
         GDM=(1-exp(-(deltaXeb-1.5*param.len)))+(1-exp(-(deltaXfb-5.*param.len)));
+        
         NLUA=(PDM2+abs(PDM2))/(2);
         NLGP=(GDM+abs(GDM))/2.;
         EgoPolicy=NLGP*NLUA*PDM1;
-        if EgoPolicy<0
-            disp('mee');
-        end
+%         if EgoPolicy<0
+%             disp('mee');
+%         end
        % phase determination
          if NLGP>0 && NLUA>0 && (index==-1 || mainTCV>=vref_road) && VNLF>=0.9*vref_road  % if mk=0 it means egopolicy2<0 meaning frst or last lane is not clear and safe  % && ((Xi(1)-closest_back_car_dist)>1*param.len) && ((closest_front_car_dist-closest_back_car_dist)>8*param.len)
          % bug having mk>0 && index==-1  instead of will covers more phase  transmission

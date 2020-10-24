@@ -142,7 +142,7 @@ mid_road    = reftraj_gen(2*T, dt,  0,20, 'Linear', aref, vref,tf,0,'road_line')
 % --- initial state ---
 X_start     = zeros(X_DIM, 1);
 X_start(2)  = ego_initial_y;   ... initial y offset of -3m (on the ref trajectory)%it must be 3 for D1 and -3 for others 
-X_start(4)  = 8;   ... initial velocity of 14.0m/sec
+X_start(4)  = 15;   ... initial velocity of 14.0m/sec
 
 % --- goal state ---
 X_goal      = transpose(ref_traj(end,:));
@@ -253,7 +253,7 @@ for i = 1:1:NUM_TOTAL
 %         scenario_ref='Linear';
 %         end
 %     traj_count=traj_count+1;
-        ref_traj   = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1)+30,vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
+        ref_traj   = reftraj_gen(2*T, dt, X_planned(2,i-1),20, scenario_ref, aref,vref,tf,X_planned(1,i-1),vehicle_type);%we need to update the x0 from 20 to current position of ego vehicle
         ref_traj_fractions((i-1):1.2*NUM_TOTAL,:)=ref_traj(1:1.2*NUM_TOTAL-(i-2),:);
     end
     
