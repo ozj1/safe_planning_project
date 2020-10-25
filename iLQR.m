@@ -101,6 +101,7 @@ vref_road=15;
 aref=0.;
 traj_count=0;
 ego_initial_y=-Lane_size/2.;
+ego_initial_x=100;
 scenario_ref='Linear';%'LaneChange';
 %vehicle objects
 egoV=vehicle;
@@ -123,7 +124,7 @@ y_init=ego_initial_y;
             y_final = 1*Lane_size/2.;
         end
 tf=1;%seconds needed to do the lane change 
-ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,0,vehicle_type);%it must be 3 for D1 and -3 for others 
+ref_traj    = reftraj_gen(2*T, dt,ego_initial_y ,20,scenario_ref , aref,vref,tf,ego_initial_x,vehicle_type);%it must be 3 for D1 and -3 for others 
 top_lane    = reftraj_gen(2*T, dt,  road_up_lim,20, 'Linear', aref,vref,tf,0, 'road_line');
 side_lane   = reftraj_gen(2*T, dt, road_low_lim,20, 'Linear', aref, vref,tf,0,'road_line');
 left_road   = reftraj_gen(2*T, dt, road_up_lim,20, 'Linear', aref, vref,tf,0,'road_line');
@@ -141,8 +142,9 @@ mid_road    = reftraj_gen(2*T, dt,  0,20, 'Linear', aref, vref,tf,0,'road_line')
 
 % --- initial state ---
 X_start     = zeros(X_DIM, 1);
+X_start(1)=ego_initial_x;
 X_start(2)  = ego_initial_y;   ... initial y offset of -3m (on the ref trajectory)%it must be 3 for D1 and -3 for others 
-X_start(4)  = 15;   ... initial velocity of 14.0m/sec
+X_start(4)  = 8;   ... initial velocity of 14.0m/sec
 
 % --- goal state ---
 X_goal      = transpose(ref_traj(end,:));
@@ -168,7 +170,7 @@ U0(2,:) = 0.00 * ones(1, NUM_CTRL);     ... initial steering sequence
 %           to the next lane with target vehicles front and behind 
 %   O1--one front target vehicle (v=8m/s) to follow and lane changing 
 %           to the next lane with target vehicles behind (10m/s) go vehicle 15m/s
-scenario = 'Od5';
+scenario = 'S4-3';
 [OBS, cut_in_traj] = scenario_generation(scenario);
 tgt_reach_traj = cut_in_traj;... this is used by reachability analysis
 
@@ -496,6 +498,13 @@ pOBS = zeros(5, length(OBS));
 % [egoimage, map, egoimage_alpha]  = imread('egoV.png');
 
 % egoimage = imresize(egoimage, 0.1);
+for i=1:NUM_TOTAL
+     if ref_traj_fractions(i,1)>=ego_initial_x
+         ref_start_index=i;
+         break;
+     end
+end
+
 if plot_gif == 1
     figure()
     delay = 0.1;
@@ -509,7 +518,7 @@ if plot_gif == 1
         plot(X_planned(1,:), X_planned(2,:),'b');
         hold on
 %         if ref_traj_fractions
-        plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'--g');  
+        plot(ref_traj_fractions(ref_start_index:end,1),ref_traj_fractions(ref_start_index:end,2),'--g');  
         hold on
 %         else
 %             plot(ref_traj(:,1),ref_traj(:,2),'--g');  
@@ -643,14 +652,12 @@ end
 %% paper plotting
 figure()
 
-subplot(3, 1, 1);
+subplot(4, 1, 1);
 interval = 10;
 i0 = 1;
 it = NUM_TOTAL;
 % environment visualizations
 plot(side_lane(:,1),side_lane(:,2)+6,'--r');  
-hold on
-plot(ref_traj_fractions(:,1),ref_traj_fractions(:,2),'-.k');  
 hold on
 plot(side_lane(:,1),side_lane(:,2),'-.k');  
 hold on
@@ -692,9 +699,11 @@ plot(X_planned(1,:), X_planned(2,:), 'b');
 hold on
 % draw target trajectory
 for k = 1:length(OBS)
-    plot(obs_traj(1,:,k), obs_traj(2,:,k), 'r');
+    plot(obs_traj(1,:,k), obs_traj(2,:,k), '-.r');
     hold on
 end
+plot(ref_traj_fractions(ref_start_index:end,1),ref_traj_fractions(ref_start_index:end,2),'--g');  
+hold on
 
 axis equal
 xlim([0 NUM_TOTAL]); % B2
@@ -706,8 +715,33 @@ ylim([-8 8]);
 % height = 1080;
 % set(gcf,'position',[x0,y0,width,height]);
 
-% velocity profile
-subplot(3, 1, 2);
+subplot(4, 1, 2);
+interval = 10;
+i0 = 1;
+it = NUM_TOTAL;
+% environment visualizations
+plot(side_lane(:,1),side_lane(:,2)+6,'--r');  
+hold on
+plot(side_lane(:,1),side_lane(:,2),'-.k');  
+hold on
+plot(left_road(:,1),left_road(:,2),'k');  
+hold on
+plot(right_road(:,1),right_road(:,2),'k');  
+hold on
+plot(mid_road(:,1),mid_road(:,2),'k');  
+hold on
+
+plot(X_planned(1,:), X_planned(2,:),'b');
+hold on
+%         if ref_traj_fractions
+plot(ref_traj_fractions(ref_start_index:end,1),ref_traj_fractions(ref_start_index:end,2),'--g');  
+hold on
+
+axis equal
+xlim([0 NUM_TOTAL]); % B2
+ylim([-8 8]);
+
+subplot(4, 1, 3);
 yyaxis left
 if length(OBS)~=0
 plot(obs_traj(4,:,1), 'm', 'LineWidth', 2);
@@ -727,7 +761,7 @@ grid on
 legend('target velocity', 'ego velocity', 'ego acceleration', 'FontSize',25, 'Location', 'northwest');
 
 % acceleration and jerk profile (Omid)
-subplot(3, 1, 3);
+subplot(4, 1, 4);
 yyaxis left
 plot(X_planned(3, :), '-b', 'LineWidth', 2);
 ylabel('Acceleration (m/s^2)', 'FontSize', 25);
@@ -743,9 +777,10 @@ grid on
 legend('ego acceleration', 'ego jerk', 'FontSize',25, 'Location', 'northwest');
 
 % set subplot position
-set(subplot(3,1,1), 'Position', [0.075, 0.75, 0.85, 0.35], 'FontSize', 25)
-set(subplot(3,1,2), 'Position', [0.075, 0.52, 0.85, 0.30], 'FontSize', 25)
-set(subplot(3,1,3), 'Position', [0.075, 0.08, 0.85, 0.30], 'FontSize', 25)
+set(subplot(4,1,1), 'Position', [0.075, 0.78, 0.85, 0.35], 'FontSize', 25)
+set(subplot(4,1,2), 'Position', [0.075, 0.68, 0.85, 0.35], 'FontSize', 25)
+set(subplot(4,1,3), 'Position', [0.075, 0.48, 0.85, 0.30], 'FontSize', 25)
+set(subplot(4,1,4), 'Position', [0.075, 0.08, 0.85, 0.30], 'FontSize', 25)
 
 % set plot position
 x0 = 0;

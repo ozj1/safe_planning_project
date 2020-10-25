@@ -300,9 +300,9 @@ for i = 1:1:NUM_CTRL
 %          end
            end
         end
-        if index~=-1 && back_index~=1.5
+        if index~=-1 %&& back_index~=1.5
 %         if abs(obstacle(index).traj(1,i)-Xi(1))<abs(obstacle(back_index).traj(1,i)-Xi(1))
-        if abs(obstacle(index).traj(1,i)-Xi(1))<2*param.len
+        if abs(obstacle(index).traj(1,i)-Xi(1))<4*param.len
         ccie=1;
         end
         end
@@ -342,15 +342,15 @@ for i = 1:1:NUM_CTRL
 
         deltaXeb=Xi(1)-backNLposition;
         deltaXfb=frontNLposition-backNLposition;
-      
-        GDM=(1-exp(-(deltaXeb-1.5*param.len)))+(1-exp(-(deltaXfb-5.*param.len)));
+        deltaXfe=frontNLposition-Xi(1);
+        GDM=(1-exp(-(deltaXeb-1.5*param.len)))+(1-exp(-(deltaXfb-5.*param.len)))+(1-exp(-(deltaXfe-3.*param.len)));
         
         NLUA=(PDM2+abs(PDM2))/(2);
         NLGP=(GDM+abs(GDM))/2.;
         EgoPolicy=NLGP*NLUA*PDM1;
-%         if EgoPolicy<0
-%            % disp('mee');
-%         end
+        if EgoPolicy<0
+%              disp('mee');
+        end
        % phase determination
          if NLGP>0 && NLUA>0 && (index==-1 || mainTCV>=vref_road) && VNLF>=0.9*vref_road  % if mk=0 it means egopolicy2<0 meaning frst or last lane is not clear and safe  % && ((Xi(1)-closest_back_car_dist)>1*param.len) && ((closest_front_car_dist-closest_back_car_dist)>8*param.len)
          % bug having mk>0 && index==-1  instead of will covers more phase  transmission
@@ -378,7 +378,7 @@ for i = 1:1:NUM_CTRL
          if index==-1 
          dx_1=Imag_targetCar_dis;
          dx_2=abs(Xi(2)-Xi(2));
-         vref=floor(vref_road+abs((vref_road+0.1-vref_road)*tanh(0.05*dx_1+0.2*dx_2)));
+         vref=floor(vref_road+abs((vref_road+0.1-vref_road)*tanh(0.01*dx_1+0.2*dx_2)));
          
          B=dx_1+vref_road-0.6*vref-2*param.len;
          C=dx_1+vref_road-vref-10*param.len;
@@ -387,21 +387,23 @@ for i = 1:1:NUM_CTRL
              dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
 
             %         if y_temp_final ~= y_final
-            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.05*dx_1+0.2*dx_2)));%
+            vref=floor(obstacle(index).traj(4,i)+abs((vref_road+0.1-obstacle(index).traj(4,i))*tanh(0.01*dx_1+0.2*dx_2)));%+0.2*dx_2
             %vref=15.;
             %10 6 2020 if tgt was faster than vref_road then it is important to diminish the vlocoty of vref to vref_road
             B=dx_1+obstacle(index).traj(4,i)-0.6*vref-2*param.len;
             C=dx_1+obstacle(index).traj(4,i)-vref-10*param.len;
          end
          
-
+if vref==10
+%     disp('fff');
+end
 
             if vref>vref_road
                 vref=vref_road;
             elseif vref<0.2
                 vref=0;
             end
-            
+%             disp(vref);
             %             vref=obstacle(index).traj(4,i);
 %         elseif y_temp_final == y_final
 %             vref=vref_road;
@@ -431,13 +433,13 @@ for i = 1:1:NUM_CTRL
 %         const1=2*acotd(-30);
 %abs(const1+1.*atan(100*EgoPolicy))*
 % if i==1
-         w_ref(i)=(-log(1.-exp(-0.01*((10^-3)+dy_t))))*1.057^(30*tanh(0.09*V));
+         w_ref(i)=(-log(1.-exp(-0.01*((10^-8)+dy_t))))*1.057^(30*tanh(0.09*V));
 %          w_ref(i)=(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00004-exp(-0.01*dy_t)))*1.057^(30*tanh(0.09*V));
-         w_vel(i)=(0.1+5*tanh(0.1*W))*(-log(1.-exp(-0.01*((10^-0)+dy_t))));
+         w_vel(i)=(1+5*tanh(0.1*W))*(-log(1.-exp(-0.01*((10^-5)+dy_t))));
 %          w_vel(i)=(0.1+5*tanh(0.1*W+0.24*S))*(-log(1.00673-exp(-0.01*dy_t)));
          w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*(-log(1.-exp(-0.01*((10^-0)+dy_t))));
 %          w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00673-exp(-0.01*dy_t)));
-         w_del(i)=(2+5*tanh(0.1*W))*(-log(1.-exp(-0.01*((10^-1)+dy_t))));
+         w_del(i)=(2+5*tanh(0.1*W))*(-log(1.-exp(-0.01*((10^-3)+dy_t))));
          w_jerk(i)=0.05+2.5*(1/(sigma_jerk*(2*pi)^0.5))*(exp(-((F-mean_jerk)^2)/(2*sigma_jerk^2)));
 
 % else

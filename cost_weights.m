@@ -192,7 +192,7 @@ q1_del = 50;%50
 q2_del = 50;%50
 
 w_end_ref   = 50;%50
-w_end_acc   = 10;%110
+w_end_acc   = 20;%110
 w_end_vel   = 10;%10
 
 q1_back     = 50;
