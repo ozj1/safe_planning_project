@@ -173,7 +173,7 @@ U0(2,:) = 0.00 * ones(1, NUM_CTRL);     ... initial steering sequence
 %           to the next lane with target vehicles front and behind 
 %   O1--one front target vehicle (v=8m/s) to follow and lane changing 
 %           to the next lane with target vehicles behind (10m/s) go vehicle 15m/s
-scenario = 'S1-2';
+scenario = 'D1';
 [OBS, cut_in_traj] = scenario_generation(scenario);
 tgt_reach_traj = cut_in_traj;... this is used by reachability analysis
 
@@ -715,7 +715,7 @@ plot(ref_traj_fractions(ref_start_index:end,1),ref_traj_fractions(ref_start_inde
 hold on
 
 axis equal
-xlim([0 NUM_TOTAL]); % B2
+xlim([0 (NUM_TOTAL)]); % B2
 ylim([-8 8]);
 % % set plot position
 % x0 = 0;
@@ -747,7 +747,7 @@ plot(ref_traj_fractions(ref_start_index:end,1),ref_traj_fractions(ref_start_inde
 hold on
 
 axis equal
-xlim([0 NUM_TOTAL]); % B2
+xlim([0 (NUM_TOTAL)]); % B2
 ylim([-8 8]);
 
 subplot(4, 1, 3);
@@ -764,7 +764,7 @@ ylim([-1 18])
 yyaxis right
 plot(X_planned(3,:), 'LineWidth', 2);
 ylabel('Acceleration (m/s^2)', 'FontSize', 25);
-xlim([0 NUM_TOTAL]);
+xlim([0 (NUM_TOTAL)]);
 ylim([-5 10])
 grid on
 legend('target velocity', 'ego velocity', 'ego acceleration', 'FontSize',25, 'Location', 'northwest');
@@ -780,7 +780,7 @@ ylim([-5 10])
 yyaxis right
 plot(U_planned(1,:), 'LineWidth', 2);
 ylabel('Jerk (m/s^3)', 'FontSize', 25);
-xlim([0 NUM_TOTAL]);
+xlim([0 (NUM_TOTAL)]);
 ylim([-3 3])
 grid on
 legend('ego acceleration', 'ego jerk', 'FontSize',25, 'Location', 'northwest');
