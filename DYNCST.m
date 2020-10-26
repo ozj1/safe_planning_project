@@ -384,14 +384,14 @@ for i = 1:1:NUM_CTRL
 %          disp(index);
 %         end
 
-         
+         coef=0.02;
 
          if index==-1 && Vindex~=-1
 
          dx_1=Imag_targetCar_dis;
          dx_2=abs(Xi(2)-Xi(2));
          %vref_old=vref;
-         vref=floor(obstacle(Vindex).traj(4,i)+abs((vref_road+0.1-obstacle(Vindex).traj(4,i))*tanh(0.05*dx_1+0.2*dx_2)));%+0.2*dx_2         
+         vref=floor(obstacle(Vindex).traj(4,i)+abs((vref_road+0.1-obstacle(Vindex).traj(4,i))*tanh(coef*dx_1+0.2*dx_2)));%+0.2*dx_2         
          
          B=dx_1+vref_road-0.6*vref-2*param.len;
          C=dx_1+vref_road-vref-10*param.len;
@@ -399,7 +399,7 @@ for i = 1:1:NUM_CTRL
          elseif index==-1 && Vindex==-1
              dx_1=Imag_targetCar_dis;
              dx_2=abs(Xi(2)-Xi(2));
-             vref=floor(vref_road+abs((vref_road+0.1-vref_road)*tanh(0.05*dx_1+0.2*dx_2)));
+             vref=floor(vref_road+abs((vref_road+0.1-vref_road)*tanh(coef*dx_1+0.2*dx_2)));
              
              B=dx_1+vref_road-0.6*vref-2*param.len;
              C=dx_1+vref_road-vref-10*param.len;
@@ -409,7 +409,7 @@ for i = 1:1:NUM_CTRL
              dx_2=abs(Xi(2)-obstacle(index).traj(2,i));%dx_2=deltax(2)
 
             %         if y_temp_final ~= y_final
-            vref=floor(obstacle(Vindex).traj(4,i)+abs((vref_road+0.1-obstacle(Vindex).traj(4,i))*tanh(0.05*dx_1+0.2*dx_2)));%+0.2*dx_2
+            vref=floor(obstacle(Vindex).traj(4,i)+abs((vref_road+0.1-obstacle(Vindex).traj(4,i))*tanh(coef*dx_1+0.2*dx_2)));%+0.2*dx_2
             %vref=15.;
             %10 6 2020 if tgt was faster than vref_road then it is important to diminish the vlocoty of vref to vref_road
             B=dx_1+obstacle(index).traj(4,i)-0.6*vref-2*param.len;

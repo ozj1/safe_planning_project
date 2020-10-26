@@ -100,8 +100,8 @@ vref        = 15;
 vref_road=15;
 aref=0.;
 traj_count=0;
-ego_initial_y=Lane_size/2.;
-ego_initial_x=0;
+ego_initial_y=-Lane_size/2.;
+ego_initial_x=100;
 ego_initial_v=8;
 scenario_ref='Linear';%'LaneChange';
 %vehicle objects
@@ -173,7 +173,7 @@ U0(2,:) = 0.00 * ones(1, NUM_CTRL);     ... initial steering sequence
 %           to the next lane with target vehicles front and behind 
 %   O1--one front target vehicle (v=8m/s) to follow and lane changing 
 %           to the next lane with target vehicles behind (10m/s) go vehicle 15m/s
-scenario = 'D1';
+scenario = 'S4-3';
 [OBS, cut_in_traj] = scenario_generation(scenario);
 tgt_reach_traj = cut_in_traj;... this is used by reachability analysis
 

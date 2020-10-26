@@ -391,7 +391,7 @@ for i = 1:1:NUM_CTRL
          dx_1=Imag_targetCar_dis;
          dx_2=abs(Xi(2)-Xi(2));
          %vref_old=vref;
-         vref=floor(obstacle(Vindex).traj(4,i)+abs((vref_road+0.1-obstacle(Vindex).traj(4,i))*tanh(0.05*dx_1+0.2*dx_2)));%+0.2*dx_2         
+         vref=floor(obstacle(Vindex).traj(4,i)+abs((vref_road+0.1-obstacle(Vindex).traj(4,i))*tanh(0.01*dx_1+0.2*dx_2)));%+0.2*dx_2         
          
          B=dx_1+vref_road-0.6*vref-2*param.len;
          C=dx_1+vref_road-vref-10*param.len;
@@ -462,10 +462,11 @@ end
          w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*((-log(1.-exp(-0.01*((10^-1)+dy_t)))));
 %          w_acc(i)=(37.59*(1/(sigma_acc*(2*pi)^0.5))*(exp(-((D-mean_acc)^2)/(2*sigma_acc^2))))*(1+2*tanh(0.2*(dy_f+dx_2+V)))*(-log(1.00673-exp(-0.01*dy_t)));
          w_del(i)=(2+5*tanh(0.1*W))*((-log(1.-exp(-0.01*((10^-3)+dy_t)))));
-         w_jerk(i)=2.5*(1/(sigma_jerk*(2*pi)^0.5))*(exp(-((F-mean_jerk)^2)/(2*sigma_jerk^2)));
+         w_jerk(i)=10+2.5*(1/(sigma_jerk*(2*pi)^0.5))*(exp(-((F-mean_jerk)^2)/(2*sigma_jerk^2)));
 %0.00005+
-if jerk>0
-    
+% if w_jerk(i)>0
+% disp('ddd');
+% end
 
 % else
 %          w_ref(i)=w_ref(i-1);
