@@ -165,8 +165,8 @@ vehicle_type=cell2mat(optargs(6));
         for i = 2:length(tspan)
             x_ref(i)     = x_ref(i-1)+v_ref(i)*dt;
             
-            if x_ref(i)>180
-                x_ref(i)=180;
+            if x_ref(i)>190
+                x_ref(i)=190;
                 v_ref(i)=0;
              end
         end

@@ -71,6 +71,38 @@ vehicle_type=cell2mat(optargs(6));
         theta_ref = zeros(size(tspan));%Omid all tetha qual to zero as it is linear
         ref       = [x_ref' y_ref' a_ref' v_ref' theta_ref'];
         
+        elseif strcmp(vehicle_type,'obsS1')
+        tspan = 0:dt:T_tot;
+        x_ref =0. * ones(size(tspan));
+%         x_ref     = x0:interval:interval*(T_tot/dt);% x0 should be used instead of 0
+        y_ref     = vehicleY*ones(size(tspan));%bug use y_temp_final intead of vehicleY
+        a_ref     = a_des * ones(size(tspan));
+        disp(length(tspan));
+        intervalV=v_des/(length(tspan)/2);
+%         v_ref     = v_des:-intervalV:0;% x0 should be used instead of 0
+%         v_ref((length(tspan)/2)) =0;
+       v_ref(1)=v_des;
+        for i = 1:length(tspan)
+            calm_num=40;
+            if i<calm_num
+                v_ref(i)=8;
+            elseif i==calm_num
+                v_ref(i)=v_des;
+            else
+            v_ref(i)     = v_ref(i-1)-intervalV;
+            if v_ref(i)<0
+            v_ref(i)=0;
+            end
+            end
+        end
+         x_ref(1)=x0 ;
+        for i = 2:length(tspan)
+            x_ref(i)     = x_ref(i-1)+v_ref(i)*dt;
+        end
+%         x_ref= x0:v_ref*dt:interval*(T_tot/dt);
+        %v_ref     = v_des * ones(size(x_ref));
+        theta_ref = zeros(size(tspan));%Omid all tetha qual to zero as it is linear
+        ref       = [x_ref' y_ref' a_ref' v_ref' theta_ref'];
         elseif strcmp(vehicle_type,'obsAdv')
         tspan = 0:dt:T_tot;
         x_ref =0. * ones(size(tspan));
@@ -104,6 +136,7 @@ vehicle_type=cell2mat(optargs(6));
         theta_ref = zeros(size(tspan));%Omid all tetha qual to zero as it is linear
         ref       = [x_ref' y_ref' a_ref' v_ref' theta_ref'];
         
+        
         elseif strcmp(vehicle_type,'obsAdvS1-2')
         tspan = 0:dt:T_tot;
         x_ref =0. * ones(size(tspan));
@@ -111,7 +144,7 @@ vehicle_type=cell2mat(optargs(6));
         y_ref     = vehicleY*ones(size(tspan));%bug use y_temp_final intead of vehicleY
         a_ref     = a_des * ones(size(tspan));
         disp(length(tspan));
-        intervalV=v_des/(length(tspan)/2);
+        intervalV=v_des/(length(tspan)/3);
 %         v_ref     = v_des:-intervalV:0;% x0 should be used instead of 0
 %         v_ref((length(tspan)/2)) =0;
        v_ref(1)=v_des;
@@ -131,6 +164,7 @@ vehicle_type=cell2mat(optargs(6));
         x_ref(1)=x0 ;
         for i = 2:length(tspan)
             x_ref(i)     = x_ref(i-1)+v_ref(i)*dt;
+            
             if x_ref(i)>190
                 x_ref(i)=190;
                 v_ref(i)=0;
